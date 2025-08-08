@@ -3,24 +3,31 @@ import { Box, Typography, Avatar, Button, Grid, Modal, TextField } from "@mui/ma
 import FeedCard from "./FeedCard";
 import type { Post } from "./FeedCard";
 
-// 1. Declare o tipo correto para garantir compatibilidade
+// Tipo para álbum com data de upload (necessário para regra de limite)
+type AlbumPhoto = { url: string; dataUpload: string };
+
+// Tipo do perfil
 type PetProfile = {
   avatar: string;
   name: string;
   bio: string;
-  album: string[];
+  lastNameEdit: string; // data ISO da última edição do nome
+  album: AlbumPhoto[];
   posts: Post[];
 };
 
-// 2. Simule os dados do PET do usuário logado
+const today = new Date().toISOString().slice(0, 10); // "2025-08-08"
+
+// Simule os dados do PET do usuário logado
 const petProfile: PetProfile = {
   avatar: "/uploads/luna-avatar.jpg",
   name: "Luna",
   bio: "Fofa, adora brincar e tomar banho de sol!",
+  lastNameEdit: "2025-07-25", // Data da última edição do nome
   album: [
-    "/uploads/luna-banho.jpg",
-    "/uploads/luna-caminha.jpg",
-    "/uploads/luna-fantasia.jpg"
+    { url: "/uploads/luna-banho.jpg", dataUpload: today },
+    { url: "/uploads/luna-caminha.jpg", dataUpload: today },
+    { url: "/uploads/luna-fantasia.jpg", dataUpload: "2025-07-25" }
   ],
   posts: [
     {
@@ -33,7 +40,7 @@ const petProfile: PetProfile = {
       likes: 22,
       comments: 5,
       createdAt: "2025-08-08",
-    },
+    }
     // ...adicione mais posts deste pet se quiser
   ]
 };
@@ -41,6 +48,27 @@ const petProfile: PetProfile = {
 const ProfilePage: React.FC = () => {
   const [openEdit, setOpenEdit] = useState(false);
   const [bio, setBio] = useState(petProfile.bio);
+  const [petName, setPetName] = useState(petProfile.name);
+  const [album, setAlbum] = useState<AlbumPhoto[]>(petProfile.album);
+
+  // --- Controle para edição do nome do pet (só a cada 15 dias) ---
+  const lastEdit = new Date(petProfile.lastNameEdit);
+  const now = new Date();
+  const diffDays = Math.floor((now.getTime() - lastEdit.getTime()) / (1000 * 60 * 60 * 24));
+  const canEditName = diffDays >= 15;
+
+  // --- Controle de fotos do álbum (máximo 2 por dia) ---
+  const fotosHoje = album.filter(f => f.dataUpload === today).length;
+  const canAddPhoto = fotosHoje < 2;
+
+  // Simulação do upload (adiciona imagem fake só pra ver o limite)
+  const handleAddPhoto = () => {
+    if (!canAddPhoto) return;
+    setAlbum([
+      ...album,
+      { url: "/uploads/novafoto.jpg", dataUpload: today }
+    ]);
+  };
 
   return (
     <Box sx={{
@@ -63,7 +91,7 @@ const ProfilePage: React.FC = () => {
         alignItems: "center"
       }}>
         <Avatar src={petProfile.avatar} sx={{ width: 94, height: 94, mb: 1.5, border: "4px solid #ff7800" }} />
-        <Typography sx={{ fontWeight: 700, fontSize: "1.23rem" }}>{petProfile.name}</Typography>
+        <Typography sx={{ fontWeight: 700, fontSize: "1.23rem" }}>{petName}</Typography>
         <Typography sx={{ color: "#222", fontSize: "1rem", mb: 1, textAlign: "center" }}>
           {bio}
         </Typography>
@@ -73,17 +101,33 @@ const ProfilePage: React.FC = () => {
         >Editar perfil</Button>
       </Box>
 
-      {/* Modal de edição simples */}
+      {/* Modal de edição completa */}
       <Modal open={openEdit} onClose={() => setOpenEdit(false)}>
         <Box sx={{
           position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)",
           background: "#fff", p: 3, borderRadius: 4, boxShadow: 6, width: 320
         }}>
-          <Typography fontWeight={700} mb={2}>Editar Bio</Typography>
+          <Typography fontWeight={700} mb={2}>Editar Perfil</Typography>
+          {/* Nome só editável se passou 15 dias */}
+          <TextField
+            fullWidth
+            label="Nome do Pet"
+            value={petName}
+            onChange={e => setPetName(e.target.value)}
+            sx={{ mb: 2 }}
+            disabled={!canEditName}
+          />
+          {!canEditName && (
+            <Typography sx={{ color: "red", mb: 1, fontSize: "0.85rem" }}>
+              Só é possível editar o nome novamente em {15 - diffDays} dias.
+            </Typography>
+          )}
+          {/* Editar bio livre */}
           <TextField
             fullWidth
             multiline
             rows={3}
+            label="Bio"
             value={bio}
             onChange={(e) => setBio(e.target.value)}
             sx={{ mb: 2 }}
@@ -94,14 +138,29 @@ const ProfilePage: React.FC = () => {
 
       {/* Álbum de fotos do pet */}
       <Box sx={{ background: "#fff", mt: 2, p: 2, borderRadius: 3, mb: 2 }}>
-        <Typography fontWeight={700} fontSize="1.1rem" mb={1}>Álbum de Fotos</Typography>
+        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}>
+          <Typography fontWeight={700} fontSize="1.1rem">Álbum de Fotos</Typography>
+          <Button
+            size="small"
+            disabled={!canAddPhoto}
+            onClick={handleAddPhoto}
+            sx={{ bgcolor: "#ff7800", color: "#fff", ":hover": { bgcolor: "#b25600" }, minWidth: 0, px: 1, fontSize: "0.88rem" }}
+          >
+            Adicionar Foto
+          </Button>
+        </Box>
+        {!canAddPhoto && (
+          <Typography sx={{ color: "red", mb: 1, fontSize: "0.85rem" }}>
+            Só é possível adicionar 2 fotos por dia no álbum.
+          </Typography>
+        )}
         <Grid container spacing={1}>
-          {petProfile.album.map((img, idx) => (
+          {album.map((img, idx) => (
             <Grid item xs={4} key={idx}>
               <Box sx={{
                 width: "100%", aspectRatio: "1 / 1", borderRadius: 2, overflow: "hidden", border: "1px solid #eee"
               }}>
-                <img src={img} alt={`foto-album-${idx + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                <img src={img.url} alt={`foto-album-${idx + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
               </Box>
             </Grid>
           ))}
