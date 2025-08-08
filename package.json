@@ -5,8 +5,8 @@
   "description": "Projeto React + TypeScript + Material UI para Shihtzu",
   "author": "Seu Nome <seu@email.com>",
   "dependencies": {
-    "@emotion/react": "^11.11.4",
-    "@emotion/styled": "^11.11.5",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
     "@mui/icons-material": "^7.3.1",
     "@mui/material": "^7.3.1",
     "@mui/system": "^7.3.1",
