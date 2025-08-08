@@ -3,8 +3,17 @@ import { Box, Typography, Avatar, Button, Grid, Modal, TextField } from "@mui/ma
 import FeedCard from "./FeedCard";
 import type { Post } from "./FeedCard";
 
-// Simule os dados do PET do usuário logado
-const petProfile = {
+// 1. Declare o tipo correto para garantir compatibilidade
+type PetProfile = {
+  avatar: string;
+  name: string;
+  bio: string;
+  album: string[];
+  posts: Post[];
+};
+
+// 2. Simule os dados do PET do usuário logado
+const petProfile: PetProfile = {
   avatar: "/uploads/luna-avatar.jpg",
   name: "Luna",
   bio: "Fofa, adora brincar e tomar banho de sol!",
@@ -12,24 +21,22 @@ const petProfile = {
     "/uploads/luna-banho.jpg",
     "/uploads/luna-caminha.jpg",
     "/uploads/luna-fantasia.jpg"
+  ],
+  posts: [
+    {
+      id: 1,
+      petName: "Luna",
+      owner: "Mariana",
+      type: "image",
+      media: "/uploads/luna-banho.jpg",
+      caption: "Hoje foi dia de banho!",
+      likes: 22,
+      comments: 5,
+      createdAt: "2025-08-08",
+    },
+    // ...adicione mais posts deste pet se quiser
   ]
 };
-
-// Simule os posts do PET
-const petPosts: Post[] = [
-  {
-    id: 1,
-    petName: "Luna",
-    owner: "Mariana", // Só é usado internamente, não exibido no perfil!
-    type: "image",
-    media: "/uploads/luna-banho.jpg",
-    caption: "Hoje foi dia de banho!",
-    likes: 22,
-    comments: 5,
-    createdAt: "2025-08-08",
-  },
-  // ...outros posts deste pet
-];
 
 const ProfilePage: React.FC = () => {
   const [openEdit, setOpenEdit] = useState(false);
@@ -107,7 +114,7 @@ const ProfilePage: React.FC = () => {
         <Box sx={{
           display: "flex", flexDirection: "column", gap: 2, px: 0.5
         }}>
-          {petPosts.map(post => (
+          {petProfile.posts.map(post => (
             <FeedCard
               key={post.id}
               post={post}
