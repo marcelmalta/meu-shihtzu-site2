@@ -32,8 +32,8 @@ const StoriesBar: React.FC = () => (
         }}>
         <Box sx={{
           width: 52, height: 52, borderRadius: "50%",
-          boxShadow: story.isAdd ? "0 0 0 2px #23272e" : "0 0 0 2px #ddd",
-          border: story.isAdd ? "2px solid #23272e" : "2px solid #fff",
+          boxShadow: story.isAdd ? "0 0 0 2px #ff7800" : "0 0 0 2px #ddd",
+          border: story.isAdd ? "2px solid #ff7800" : "2px solid #fff",
           overflow: "hidden", mb: 0.3, position: "relative",
           display: "flex", alignItems: "center", justifyContent: "center"
         }}>

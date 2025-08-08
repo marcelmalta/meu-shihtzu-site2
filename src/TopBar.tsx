@@ -24,7 +24,7 @@ const TopBar: React.FC = () => (
       variant="h5"
       sx={{
         fontWeight: 700,
-        color: "#23272e",
+        color: "#ff7800",
         fontFamily: "'Segoe UI', Arial, sans-serif",
         letterSpacing: "-1px",
         mr: 0.5,
