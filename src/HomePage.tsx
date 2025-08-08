@@ -47,11 +47,98 @@ const posts: Post[] = [
     comments: 7,
     createdAt: "2025-08-07",
   },
-  // ...adicione mais posts!
+  {
+    id: 3,
+    petName: "Bidu",
+    owner: "Roberta",
+    type: "image",
+    media: "/uploads/bidu-pose.jpg",
+    caption: "Bidu ama posar pra foto!",
+    likes: 17,
+    comments: 2,
+    createdAt: "2025-08-06",
+  },
+  {
+    id: 4,
+    petName: "Mel",
+    owner: "Lucas",
+    type: "video",
+    media: "/uploads/mel-correndo.mp4",
+    caption: "Correndo pela casa depois do banho 😂",
+    likes: 48,
+    comments: 10,
+    createdAt: "2025-08-05",
+  },
+  {
+    id: 5,
+    petName: "Simba",
+    owner: "Ana",
+    type: "image",
+    media: "/uploads/simba-fantasia.jpg",
+    caption: "Fantasia nova pro Simba 🦁",
+    likes: 29,
+    comments: 8,
+    createdAt: "2025-08-04",
+  },
+  {
+    id: 6,
+    petName: "Zoe",
+    owner: "Carlos",
+    type: "image",
+    media: "/uploads/zoe-sol.jpg",
+    caption: "Tomando solzinho da manhã 😎",
+    likes: 12,
+    comments: 1,
+    createdAt: "2025-08-03",
+  },
+  {
+    id: 7,
+    petName: "Dudu",
+    owner: "Priscila",
+    type: "video",
+    media: "/uploads/dudu-truques.mp4",
+    caption: "Dudu aprendendo novos truques!",
+    likes: 54,
+    comments: 14,
+    createdAt: "2025-08-02",
+  },
+  {
+    id: 8,
+    petName: "Nina",
+    owner: "Vitor",
+    type: "image",
+    media: "/uploads/nina-caminha.jpg",
+    caption: "Descansando depois do passeio.",
+    likes: 21,
+    comments: 3,
+    createdAt: "2025-08-02",
+  },
+  {
+    id: 9,
+    petName: "Bento",
+    owner: "Camila",
+    type: "image",
+    media: "/uploads/bento-lanche.jpg",
+    caption: "Olha a carinha pedindo petisco 😍",
+    likes: 33,
+    comments: 12,
+    createdAt: "2025-08-01",
+  },
+  {
+    id: 10,
+    petName: "Lilica",
+    owner: "Fernanda",
+    type: "video",
+    media: "/uploads/lilica-bolinha.mp4",
+    caption: "Brincando de pegar bolinha, não cansa nunca!",
+    likes: 61,
+    comments: 20,
+    createdAt: "2025-07-31",
+  },
 ];
 
 // ===== Header com botão Home =====
-const Header: React.FC = () => {
+function Header() {
   const navigate = useNavigate();
   const [open, setOpen] = React.useState(false);
 
@@ -83,8 +170,7 @@ const Header: React.FC = () => {
           objectFit: "cover",
           opacity: 0.58,
           zIndex: 1,
-        }}
-      />
+        }} />
       <Button
         onClick={() => navigate("/")}
         sx={{
@@ -120,7 +206,7 @@ const Header: React.FC = () => {
       {/* Drawer do menu lateral pode ser adicionado aqui */}
     </Box>
   );
-};
+}
 
 // ===== Card do Feed =====
 const FeedCard: React.FC<FeedCardProps> = ({ post, onClick }) => {
