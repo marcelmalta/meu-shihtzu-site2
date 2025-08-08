@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   Box,
   Typography,
@@ -13,12 +13,28 @@ import ListItemButton from "@mui/material/ListItemButton";
 import MenuIcon from "@mui/icons-material/Menu";
 import { useNavigate } from "react-router-dom";
 
-// Adicione isso ao <head> do index.html para garantir a fonte Orelega One:
-// <link href="https://fonts.googleapis.com/css2?family=Orelega+One&display=swap" rel="stylesheet" />
+// Exemplo de dados de notícias
+const news = [
+  {
+    id: 1,
+    title: "Dica para escovação diária",
+    type: "image",
+    media: "/img/news1.jpg",
+    description: "Como escovar seu Shih Tzu corretamente.",
+  },
+  {
+    id: 2,
+    title: "Brincadeira saudável",
+    type: "video",
+    media: "/videos/brincadeira.mp4",
+    description: "Veja como estimular seu pet com brincadeiras seguras.",
+  },
+  // Adicione outras notícias...
+];
 
 // =================== Header ===================
-const Header: React.FC = () => {
-  const [open, setOpen] = useState(false);
+export const Header: React.FC = () => {
+  const [open, setOpen] = React.useState(false);
   const navigate = useNavigate();
 
   return (
@@ -26,13 +42,15 @@ const Header: React.FC = () => {
       sx={{
         position: "relative",
         width: "100vw",
-        height: 130,
+        height: 90,
         background: "#111",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         overflow: "hidden",
         pb: 1.5,
+        boxShadow: "0 2px 10px #0003",
+        zIndex: 10,
       }}
     >
       <img
@@ -49,7 +67,8 @@ const Header: React.FC = () => {
           zIndex: 1,
         }}
       />
-      <Typography
+      <Button
+        onClick={() => navigate("/")}
         sx={{
           position: "relative",
           zIndex: 2,
@@ -59,10 +78,14 @@ const Header: React.FC = () => {
           fontWeight: 700,
           letterSpacing: "2px",
           ml: 2,
+          background: "none",
+          boxShadow: "none",
+          "&:hover": { background: "none", color: "#FFD700" },
         }}
+        disableRipple
       >
         SHIHTIZUz
-      </Typography>
+      </Button>
       <IconButton
         sx={{
           position: "absolute",
@@ -121,165 +144,79 @@ const Header: React.FC = () => {
   );
 };
 
-// =================== NewsHighlight ===================
-const NewsHighlight: React.FC<{ onClick: () => void }> = ({ onClick }) => (
-  <Box sx={{ my: 3 }}>
-    <Typography
-      variant="h6"
-      sx={{
-        fontFamily: "'Orelega One', cursive",
-        fontWeight: 700,
-        textAlign: "center",
-        color: "#111",
-        letterSpacing: 2,
-        fontSize: "1.35rem",
-        mb: 1,
-        textShadow: "1px 1px 2px #fff9",
-      }}
-    >
-      NOVIDADES
-    </Typography>
-    <Typography
-      sx={{
-        fontFamily: "'Roboto', Arial, sans-serif",
-        textAlign: "center",
-        color: "#333",
-        fontSize: "0.95rem",
-        mb: 1.3,
-      }}
-    >
-      Últimas atualizações para você!
-    </Typography>
-    <Box
-      onClick={onClick}
-      sx={{
-        width: "90vw",
-        maxWidth: 320,
-        height: 170,
-        bgcolor: "#d9d9d9",
-        mx: "auto",
-        borderRadius: 3,
-        boxShadow: 2,
-        cursor: "pointer",
-        transition: "transform 0.15s",
-        "&:hover": { transform: "scale(1.02)" },
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundImage: "url('/img/news-highlight.jpg')",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-      }}
-    >
-      {/* Conteúdo opcional dentro do destaque */}
-    </Box>
-  </Box>
-);
-
-// =================== NewsGrid ===================
-const NewsGrid: React.FC<{ onClick: (id: number) => void }> = ({ onClick }) => (
-  <Box sx={{ my: 1.5 }}>
-    <Typography
-      variant="h6"
-      sx={{
-        fontFamily: "'Orelega One', cursive",
-        fontWeight: 700,
-        textAlign: "center",
-        color: "#111",
-        letterSpacing: 2,
-        fontSize: "1.15rem",
-        mb: 0.6,
-        textShadow: "1px 1px 2px #fff9",
-      }}
-    >
-      MAIS NOTÍCIAS
-    </Typography>
-    <Typography
-      sx={{
-        fontFamily: "'Roboto', Arial, sans-serif",
-        textAlign: "center",
-        color: "#333",
-        fontSize: "0.89rem",
-        mb: 1,
-      }}
-    >
-      Confira as notícias anteriores
-    </Typography>
-    <Box
-      sx={{
-        display: "grid",
-        gridTemplateColumns: "1fr 1fr",
-        gap: 2,
-        width: "90vw",
-        maxWidth: 340,
-        mx: "auto",
-        mb: 2,
-      }}
-    >
-      {[1, 2, 3, 4].map((n) => (
-        <Box
-          key={n}
-          onClick={() => onClick(n)}
-          sx={{
-            width: "100%",
-            aspectRatio: "1 / 1",
-            bgcolor: "#d9d9d9",
-            borderRadius: 2,
-            boxShadow: 1,
-            cursor: "pointer",
-            transition: "transform 0.13s",
-            "&:hover": { transform: "scale(1.03)" },
-            backgroundImage: `url('/img/news${n}.jpg')`,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-          }}
-        />
-      ))}
-    </Box>
-  </Box>
-);
-
-// =================== LoadMoreButton ===================
-const LoadMoreButton: React.FC = () => (
-  <Box sx={{ width: "90vw", maxWidth: 320, mx: "auto", mb: 2 }}>
-    <Button
-      fullWidth
-      variant="contained"
-      sx={{
-        bgcolor: "#d5bb51",
-        color: "#111",
-        fontWeight: 700,
-        fontFamily: "'Orelega One', cursive",
-        letterSpacing: 2,
-        py: 1.1,
-        fontSize: "1rem",
-        borderRadius: 3,
-        boxShadow: 2,
-        "&:hover": { bgcolor: "#b9a342" },
-      }}
-    >
-      CARREGAR MAIS
-    </Button>
-  </Box>
-);
-
-// =================== Footer ===================
-const Footer: React.FC = () => (
+// =================== NewsCard ===================
+const NewsCard: React.FC<{
+  item: typeof news[0];
+  onClick: () => void;
+}> = ({ item, onClick }) => (
   <Box
+    onClick={onClick}
     sx={{
-      width: "100vw",
-      height: 70,
-      bgcolor: "#111",
-      color: "#d5bb51",
+      width: "100%",
+      maxWidth: 350,
+      bgcolor: "#fff",
+      borderRadius: 3,
+      boxShadow: 2,
+      cursor: "pointer",
+      mb: 3,
+      mx: "auto",
+      p: 2,
+      transition: "box-shadow 0.2s, transform 0.15s",
+      "&:hover": { boxShadow: 5, transform: "scale(1.01)" },
       display: "flex",
+      flexDirection: "column",
       alignItems: "center",
-      justifyContent: "center",
-      fontFamily: "'Roboto', Arial, sans-serif",
-      fontSize: "1.08rem",
-      mt: 4,
     }}
   >
-    © {new Date().getFullYear()} Shihtzuz — Todos os direitos reservados
+    {item.type === "image" ? (
+      <img
+        src={item.media}
+        alt={item.title}
+        style={{
+          width: "100%",
+          maxHeight: 210,
+          borderRadius: 12,
+          objectFit: "cover",
+        }}
+      />
+    ) : (
+      <video
+        controls
+        style={{
+          width: "100%",
+          maxHeight: 210,
+          borderRadius: 12,
+          background: "#222",
+        }}
+        poster="/img/news-thumb.jpg"
+      >
+        <source src={item.media} type="video/mp4" />
+        Seu navegador não suporta vídeo.
+      </video>
+    )}
+    <Typography
+      sx={{
+        mt: 1.4,
+        fontWeight: 700,
+        fontFamily: "'Orelega One', cursive",
+        color: "#d5bb51",
+        fontSize: "1.11rem",
+        textAlign: "center",
+      }}
+    >
+      {item.title}
+    </Typography>
+    <Typography
+      sx={{
+        color: "#444",
+        fontSize: "0.96rem",
+        mt: 0.5,
+        mb: 1,
+        textAlign: "center",
+      }}
+    >
+      {item.description}
+    </Typography>
   </Box>
 );
 
@@ -296,10 +233,53 @@ function HomePage() {
       }}
     >
       <Header />
-      <NewsHighlight onClick={() => navigate("/noticia/1")} />
-      <NewsGrid onClick={(id) => navigate(`/noticia/${id}`)} />
-      <LoadMoreButton />
-      <Footer />
+      {/* Bloco Novidades */}
+      <Box sx={{ maxWidth: 980, mx: "auto", mt: 5 }}>
+        <Typography
+          variant="h5"
+          sx={{
+            fontFamily: "'Orelega One', cursive",
+            fontWeight: 700,
+            textAlign: "center",
+            color: "#111",
+            letterSpacing: 2,
+            fontSize: "1.35rem",
+            mb: 1,
+            textShadow: "1px 1px 2px #fff9",
+          }}
+        >
+          NOVIDADES
+        </Typography>
+        <Typography
+          sx={{
+            fontFamily: "'Roboto', Arial, sans-serif",
+            textAlign: "center",
+            color: "#333",
+            fontSize: "0.95rem",
+            mb: 2.5,
+          }}
+        >
+          Últimas atualizações para você!
+        </Typography>
+
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))",
+            gap: 32,
+            justifyContent: "center",
+            mb: 3,
+          }}
+        >
+          {news.map((item) => (
+            <NewsCard
+              key={item.id}
+              item={item}
+              onClick={() => navigate(`/noticia/${item.id}`)}
+            />
+          ))}
+        </Box>
+      </Box>
     </Box>
   );
 }

@@ -40,3 +40,94 @@
 .read-the-docs {
   color: #888;
 }
+
+/* ========== HEADER ========== */
+.header-btn {
+  font-family: 'Orelega One', cursive;
+  font-size: 2rem;
+  color: #d5bb51;
+  background: none;
+  border: none;
+  font-weight: bold;
+  letter-spacing: 2px;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.header-btn:hover,
+.header-btn:focus {
+  color: #FFD700;
+}
+
+/* ========== NOVIDADES (HomePage) ========== */
+.novidades-title {
+  font-family: 'Orelega One', cursive;
+  font-size: 1.5rem;
+  color: #111;
+  letter-spacing: 2px;
+  font-weight: bold;
+  text-align: center;
+  margin-top: 32px;
+  margin-bottom: 6px;
+  text-shadow: 1px 1px 2px #fff9;
+}
+
+.novidades-desc {
+  font-family: 'Roboto', Arial, sans-serif;
+  color: #333;
+  text-align: center;
+  font-size: 1rem;
+  margin-bottom: 24px;
+}
+
+.novidades-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 32px;
+  justify-content: center;
+  max-width: 980px;
+  margin: 0 auto 32px auto;
+}
+
+.novidade-card {
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 2px 12px #0001;
+  padding: 16px;
+  transition: box-shadow 0.2s, transform 0.13s;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.novidade-card:hover,
+.novidade-card:focus {
+  box-shadow: 0 4px 24px #d5bb5155;
+  transform: scale(1.015);
+}
+
+.novidade-card img,
+.novidade-card video {
+  width: 100%;
+  max-height: 210px;
+  object-fit: cover;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  background: #222;
+}
+
+/* Título do card */
+.novidade-card-title {
+  font-family: 'Orelega One', cursive;
+  color: #d5bb51;
+  font-size: 1.15rem;
+  font-weight: 700;
+  text-align: center;
+  margin: 0 0 5px 0;
+}
+
+/* Descrição do card */
+.novidade-card-desc {
+  color: #444;
+  font-size: 0.98rem;
+  text-align: cen
+  }
