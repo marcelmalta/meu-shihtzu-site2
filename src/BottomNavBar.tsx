@@ -14,7 +14,7 @@ const BottomNavBar: React.FC = () => (
     display: "flex", justifyContent: "space-around", alignItems: "center",
     maxWidth: 500, mx: "auto", width: "100vw"
   }}>
-    <IconButton><HomeIcon sx={{ color: "#1877f2" }} /></IconButton>
+    <IconButton><HomeIcon sx={{ color: "#23272e" }} /></IconButton>
     <IconButton><OndemandVideoIcon sx={{ color: "#333" }} /></IconButton>
     <IconButton><PeopleIcon sx={{ color: "#333" }} /></IconButton>
     <IconButton><StorefrontIcon sx={{ color: "#333" }} /></IconButton>

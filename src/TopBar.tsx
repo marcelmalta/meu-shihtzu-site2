@@ -24,17 +24,17 @@ const TopBar: React.FC = () => (
       variant="h5"
       sx={{
         fontWeight: 700,
-        color: "#1877f2",
+        color: "#23272e",
         fontFamily: "'Segoe UI', Arial, sans-serif",
         letterSpacing: "-1px",
         mr: 0.5,
       }}>
-      ShihTzuBook
+      Shihtzuz
     </Typography>
     <Box sx={{ display: "flex", gap: 0.5 }}>
       <IconButton><SearchIcon sx={{ color: "#050505" }} /></IconButton>
-      <IconButton><AddBoxIcon sx={{ color: "#1877f2" }} /></IconButton>
-      <IconButton><MessageIcon sx={{ color: "#1877f2" }} /></IconButton>
+      <IconButton><AddBoxIcon sx={{ color: "#23272e" }} /></IconButton>
+      <IconButton><MessageIcon sx={{ color: "#23272e" }} /></IconButton>
       <Avatar sx={{ width: 36, height: 36 }} src={userAvatar} />
     </Box>
   </Box>

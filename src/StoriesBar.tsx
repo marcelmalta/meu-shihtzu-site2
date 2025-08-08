@@ -32,8 +32,8 @@ const StoriesBar: React.FC = () => (
         }}>
         <Box sx={{
           width: 52, height: 52, borderRadius: "50%",
-          boxShadow: story.isAdd ? "0 0 0 2px #1877f2" : "0 0 0 2px #ddd",
-          border: story.isAdd ? "2px solid #1877f2" : "2px solid #fff",
+          boxShadow: story.isAdd ? "0 0 0 2px #23272e" : "0 0 0 2px #ddd",
+          border: story.isAdd ? "2px solid #23272e" : "2px solid #fff",
           overflow: "hidden", mb: 0.3, position: "relative",
           display: "flex", alignItems: "center", justifyContent: "center"
         }}>
@@ -41,7 +41,7 @@ const StoriesBar: React.FC = () => (
             <>
               <Avatar src={userAvatar} sx={{ width: "100%", height: "100%" }} />
               <Box sx={{
-                position: "absolute", bottom: -6, right: -6, bgcolor: "#1877f2",
+                position: "absolute", bottom: -6, right: -6, bgcolor: "#23272e",
                 width: 24, height: 24, borderRadius: "50%",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 border: "2.5px solid #fff"
