@@ -1,41 +1,59 @@
 import React from "react";
-import {
-  Box,
-  Typography,
-  IconButton,
-  Drawer,
-  List,
-  ListItem,
-  ListItemText,
-  Button,
-} from "@mui/material";
-import ListItemButton from "@mui/material/ListItemButton";
-import MenuIcon from "@mui/icons-material/Menu";
 import { useNavigate } from "react-router-dom";
+import { Box, Typography, Button, IconButton } from "@mui/material";
+import MenuIcon from "@mui/icons-material/Menu";
 
-// Exemplo de dados de notícias
-const news = [
+// ===== Tipos TypeScript =====
+type PostType = "image" | "video";
+
+interface Post {
+  id: number;
+  petName: string;
+  owner: string;
+  type: PostType;
+  media: string;
+  caption: string;
+  likes: number;
+  comments: number;
+  createdAt: string;
+}
+
+interface FeedCardProps {
+  post: Post;
+  onClick: () => void;
+}
+
+// ===== Exemplo de posts simulados (mock) =====
+const posts: Post[] = [
   {
     id: 1,
-    title: "Dica para escovação diária",
+    petName: "Luna",
+    owner: "Mariana",
     type: "image",
-    media: "/img/news1.jpg",
-    description: "Como escovar seu Shih Tzu corretamente.",
+    media: "/uploads/luna-banho.jpg",
+    caption: "Hoje foi dia de banho!",
+    likes: 22,
+    comments: 5,
+    createdAt: "2025-08-08",
   },
   {
     id: 2,
-    title: "Brincadeira saudável",
+    petName: "Max",
+    owner: "Paulo",
     type: "video",
-    media: "/videos/brincadeira.mp4",
-    description: "Veja como estimular seu pet com brincadeiras seguras.",
+    media: "/uploads/max-brincando.mp4",
+    caption: "Max brincando no parque 🐾",
+    likes: 35,
+    comments: 7,
+    createdAt: "2025-08-07",
   },
-  // Adicione outras notícias...
+  // ...adicione mais posts!
 ];
 
-// =================== Header ===================
-export const Header: React.FC = () => {
-  const [open, setOpen] = React.useState(false);
+// ===== Header com botão Home =====
+const Header: React.FC = () => {
   const navigate = useNavigate();
+  const [open, setOpen] = React.useState(false);
 
   return (
     <Box
@@ -99,129 +117,107 @@ export const Header: React.FC = () => {
       >
         <MenuIcon sx={{ fontSize: 38 }} />
       </IconButton>
-      <Drawer
-        anchor="right"
-        open={open}
-        onClose={() => setOpen(false)}
-        PaperProps={{
-          sx: { width: 220, bgcolor: "#181818", color: "#fff" },
-        }}
-      >
-        <Box sx={{ mt: 4 }}>
-          <List>
-            {[
-              { label: "Cadastro", route: "/cadastro" },
-              { label: "Login", route: "/login" },
-              { label: "Shop", route: "/shop" },
-            ].map((item) => (
-              <ListItem disablePadding key={item.label}>
-                <ListItemButton
-                  onClick={() => {
-                    setOpen(false);
-                    navigate(item.route);
-                  }}
-                >
-                  <ListItemText
-                    primary={
-                      <Typography
-                        sx={{
-                          fontFamily: "'Orelega One', cursive",
-                          fontSize: "1.1rem",
-                          color: "#FFD700",
-                        }}
-                      >
-                        {item.label}
-                      </Typography>
-                    }
-                  />
-                </ListItemButton>
-              </ListItem>
-            ))}
-          </List>
-        </Box>
-      </Drawer>
+      {/* Drawer do menu lateral pode ser adicionado aqui */}
     </Box>
   );
 };
 
-// =================== NewsCard ===================
-const NewsCard: React.FC<{
-  item: typeof news[0];
-  onClick: () => void;
-}> = ({ item, onClick }) => (
-  <Box
-    onClick={onClick}
-    sx={{
-      width: "100%",
-      maxWidth: 350,
-      bgcolor: "#fff",
-      borderRadius: 3,
-      boxShadow: 2,
-      cursor: "pointer",
-      mb: 3,
-      mx: "auto",
-      p: 2,
-      transition: "box-shadow 0.2s, transform 0.15s",
-      "&:hover": { boxShadow: 5, transform: "scale(1.01)" },
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-    }}
-  >
-    {item.type === "image" ? (
-      <img
-        src={item.media}
-        alt={item.title}
-        style={{
-          width: "100%",
-          maxHeight: 210,
-          borderRadius: 12,
-          objectFit: "cover",
+// ===== Card do Feed =====
+const FeedCard: React.FC<FeedCardProps> = ({ post, onClick }) => {
+  return (
+    <Box
+      className="novidade-card"
+      onClick={onClick}
+      sx={{
+        background: "#fff",
+        borderRadius: 3,
+        boxShadow: 2,
+        cursor: "pointer",
+        mb: 3,
+        mx: "auto",
+        p: 2,
+        maxWidth: 370,
+        transition: "box-shadow 0.2s, transform 0.15s",
+        "&:hover": { boxShadow: 5, transform: "scale(1.015)" },
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+      }}
+    >
+      {/* Nome do pet e tutor */}
+      <Typography
+        sx={{
+          fontWeight: 700,
+          fontFamily: "'Orelega One', cursive",
+          color: "#d5bb51",
+          fontSize: "1.11rem",
+          mb: 0.2,
         }}
-      />
-    ) : (
-      <video
-        controls
-        style={{
-          width: "100%",
-          maxHeight: 210,
-          borderRadius: 12,
-          background: "#222",
-        }}
-        poster="/img/news-thumb.jpg"
       >
-        <source src={item.media} type="video/mp4" />
-        Seu navegador não suporta vídeo.
-      </video>
-    )}
-    <Typography
-      sx={{
-        mt: 1.4,
-        fontWeight: 700,
-        fontFamily: "'Orelega One', cursive",
-        color: "#d5bb51",
-        fontSize: "1.11rem",
-        textAlign: "center",
-      }}
-    >
-      {item.title}
-    </Typography>
-    <Typography
-      sx={{
-        color: "#444",
-        fontSize: "0.96rem",
-        mt: 0.5,
-        mb: 1,
-        textAlign: "center",
-      }}
-    >
-      {item.description}
-    </Typography>
-  </Box>
-);
+        {post.petName}
+      </Typography>
+      <Typography
+        sx={{
+          color: "#444",
+          fontSize: "0.92rem",
+          fontStyle: "italic",
+          mb: 1,
+        }}
+      >
+        de @{post.owner} — {new Date(post.createdAt).toLocaleDateString()}
+      </Typography>
+      {/* Mídia */}
+      {post.type === "image" ? (
+        <img
+          src={post.media}
+          alt={post.caption}
+          style={{
+            width: "100%",
+            maxHeight: 210,
+            borderRadius: 12,
+            objectFit: "cover",
+            marginBottom: 12,
+            background: "#222",
+          }}
+        />
+      ) : (
+        <video
+          controls
+          style={{
+            width: "100%",
+            maxHeight: 210,
+            borderRadius: 12,
+            marginBottom: 12,
+            background: "#222",
+          }}
+          poster="/img/video-thumb.jpg"
+        >
+          <source src={post.media} type="video/mp4" />
+          Seu navegador não suporta vídeo.
+        </video>
+      )}
+      {/* Legenda */}
+      <Typography
+        sx={{
+          color: "#333",
+          fontSize: "1rem",
+          mb: 1,
+          textAlign: "center",
+        }}
+      >
+        {post.caption}
+      </Typography>
+      {/* Curtidas e comentários */}
+      <Box sx={{ display: "flex", gap: 2, mt: 1 }}>
+        <span>❤️ {post.likes}</span>
+        <span>💬 {post.comments}</span>
+      </Box>
+    </Box>
+  );
+};
 
-// =================== HomePage ===================
-function HomePage() {
+// ===== Página Home com o Feed =====
+const HomePage: React.FC = () => {
   const navigate = useNavigate();
 
   return (
@@ -233,55 +229,56 @@ function HomePage() {
       }}
     >
       <Header />
-      {/* Bloco Novidades */}
-      <Box sx={{ maxWidth: 980, mx: "auto", mt: 5 }}>
-        <Typography
-          variant="h5"
-          sx={{
-            fontFamily: "'Orelega One', cursive",
-            fontWeight: 700,
-            textAlign: "center",
-            color: "#111",
-            letterSpacing: 2,
-            fontSize: "1.35rem",
-            mb: 1,
-            textShadow: "1px 1px 2px #fff9",
-          }}
-        >
-          NOVIDADES
-        </Typography>
-        <Typography
-          sx={{
-            fontFamily: "'Roboto', Arial, sans-serif",
-            textAlign: "center",
-            color: "#333",
-            fontSize: "0.95rem",
-            mb: 2.5,
-          }}
-        >
-          Últimas atualizações para você!
-        </Typography>
 
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))",
-            gap: 32,
-            justifyContent: "center",
-            mb: 3,
-          }}
-        >
-          {news.map((item) => (
-            <NewsCard
-              key={item.id}
-              item={item}
-              onClick={() => navigate(`/noticia/${item.id}`)}
-            />
-          ))}
-        </Box>
+      <Typography
+        variant="h5"
+        sx={{
+          fontFamily: "'Orelega One', cursive",
+          fontWeight: 700,
+          textAlign: "center",
+          color: "#111",
+          letterSpacing: 2,
+          fontSize: "1.35rem",
+          mb: 1,
+          mt: 5,
+          textShadow: "1px 1px 2px #fff9",
+        }}
+      >
+        FEED DOS SHIHTZUS
+      </Typography>
+      <Typography
+        sx={{
+          fontFamily: "'Roboto', Arial, sans-serif",
+          textAlign: "center",
+          color: "#333",
+          fontSize: "0.97rem",
+          mb: 2.5,
+        }}
+      >
+        Veja as últimas postagens dos tutores e compartilhe momentos do seu pet!
+      </Typography>
+
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))",
+          gap: 32,
+          justifyContent: "center",
+          maxWidth: 980,
+          mx: "auto",
+          mb: 3,
+        }}
+      >
+        {posts.map((post) => (
+          <FeedCard
+            key={post.id}
+            post={post}
+            onClick={() => navigate(`/post/${post.id}`)}
+          />
+        ))}
       </Box>
     </Box>
   );
-}
+};
 
 export default HomePage;
