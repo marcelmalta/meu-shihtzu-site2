@@ -24,7 +24,7 @@ const CreatePostBox: React.FC = () => (
       InputProps={{
         startAdornment: (
           <InputAdornment position="start">
-            <PhotoCameraIcon sx={{ color: "#1877f2", mr: 0.5 }} />
+            <PhotoCameraIcon sx={{ color: "#ff7800", mr: 0.5 }} />
           </InputAdornment>
         ),
         style: { fontSize: "1rem" },
@@ -33,7 +33,7 @@ const CreatePostBox: React.FC = () => (
             <Button sx={{
               bgcolor: "#1877f2", color: "#fff",
               px: 2, fontWeight: 600, borderRadius: 2, textTransform: "none",
-              ":hover": { bgcolor: "#145db2" }
+              ":hover": { bgcolor: "#ff7800" }
             }}>
               Postar
             </Button>

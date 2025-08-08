@@ -33,8 +33,8 @@ const TopBar: React.FC = () => (
     </Typography>
     <Box sx={{ display: "flex", gap: 0.5 }}>
       <IconButton><SearchIcon sx={{ color: "#050505" }} /></IconButton>
-      <IconButton><AddBoxIcon sx={{ color: "#23272e" }} /></IconButton>
-      <IconButton><MessageIcon sx={{ color: "#23272e" }} /></IconButton>
+      <IconButton><AddBoxIcon sx={{ color: "#ff7800" }} /></IconButton>
+      <IconButton><MessageIcon sx={{ color: "#ff7800" }} /></IconButton>
       <Avatar sx={{ width: 36, height: 36 }} src={userAvatar} />
     </Box>
   </Box>
