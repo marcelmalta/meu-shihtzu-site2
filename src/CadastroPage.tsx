@@ -1,3 +1,4 @@
+// src/CadastroPage.tsx
 import React, { useState } from "react";
 import {
   Box,
@@ -9,12 +10,17 @@ import {
   ListItemText,
   TextField,
   Button,
+  Card,
+  CardContent,
+  Stack,
+  Alert,
 } from "@mui/material";
 import ListItemButton from "@mui/material/ListItemButton";
 import MenuIcon from "@mui/icons-material/Menu";
 import { useNavigate } from "react-router-dom";
+import { registerUser, setAuthToken } from "./services/api";
 
-// Header padrão
+// Header padrão (mantive seu visual)
 const Header: React.FC = () => {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
@@ -121,6 +127,34 @@ const Header: React.FC = () => {
 
 // --- Página de Cadastro ---
 const CadastroPage: React.FC = () => {
+  const navigate = useNavigate();
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!name.trim() || !email.trim() || !password.trim()) return;
+    try {
+      setSubmitting(true);
+      setError("");
+      const res = await registerUser(name.trim(), email.trim(), password.trim());
+      const token = res.data?.token;
+      if (token) setAuthToken(token);
+      navigate("/selecionar-pet");
+    } catch (err: any) {
+      setError(
+        err?.response?.data?.message ||
+          err?.message ||
+          "Falha ao cadastrar"
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   return (
     <Box sx={{ bgcolor: "#fff", minHeight: "100vh", pb: 2 }}>
       <Header />
@@ -142,24 +176,54 @@ const CadastroPage: React.FC = () => {
         CADASTRO
       </Typography>
 
-      {/* Formulário ou Placeholder */}
-      <Box
+      {/* Formulário */}
+      <Card
         sx={{
           width: "92vw",
-          maxWidth: 370,
-          height: 240,
-          bgcolor: "#ddd",
-          borderRadius: 2,
+          maxWidth: 420,
           mx: "auto",
           mb: 2.5,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
+          borderRadius: 2,
         }}
       >
-        {/* Substitua por seu formulário futuramente */}
-        {/* <TextField ... /> */}
-      </Box>
+        <CardContent>
+          <Box component="form" onSubmit={onSubmit}>
+            <Stack spacing={2}>
+              {error && <Alert severity="error">{error}</Alert>}
+              <TextField
+                label="Nome"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                fullWidth
+                required
+              />
+              <TextField
+                label="E-mail"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                fullWidth
+                required
+              />
+              <TextField
+                label="Senha"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                fullWidth
+                required
+              />
+              <Button
+                type="submit"
+                variant="contained"
+                disabled={submitting}
+              >
+                {submitting ? "Cadastrando..." : "Cadastrar"}
+              </Button>
+            </Stack>
+          </Box>
+        </CardContent>
+      </Card>
 
       {/* Botão Login */}
       <Typography
