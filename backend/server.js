@@ -1,4 +1,3 @@
-// server.js
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
@@ -7,80 +6,45 @@ const path = require('path');
 
 const app = express();
 
-/* =========================
-   CORS (front Render + local)
-   ========================= */
+// CORS
 const clean = (u) => (u || '').replace(/\/+$/, '');
 const FRONTEND = clean(process.env.FRONTEND_URL) || 'http://localhost:5173';
-const allowedOrigins = new Set([
-  FRONTEND,                // ex.: https://seu-front.onrender.com
-  'http://localhost:3000', // CRA
-  'http://localhost:5173', // Vite
-]);
+const allowedOrigins = new Set([FRONTEND, 'http://localhost:3000', 'http://localhost:5173']);
 
-const corsOptions = {
+app.use(cors({
   origin(origin, cb) {
-    if (!origin) return cb(null, true);          // Postman/CLI/health
+    if (!origin) return cb(null, true);
     if (allowedOrigins.has(origin)) return cb(null, true);
     return cb(new Error('Not allowed by CORS'));
   },
   credentials: true,
   allowedHeaders: ['Content-Type', 'Authorization'],
   methods: ['GET','HEAD','PUT','PATCH','POST','DELETE','OPTIONS'],
-};
+}));
+app.options('*', cors());
 
-app.use(cors(corsOptions));
-app.options('*', cors(corsOptions)); // pré-flight
-
-/* =========================
-   Body parsers
-   ========================= */
+// Body
 app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-/* =========================
-   Healthcheck
-   ========================= */
+// Health
 app.get('/health', (_req, res) => res.send('ok'));
 
-/* =========================
-   Arquivos estáticos (dev)
-   ========================= */
+// Static (dev)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-/* =========================================================
-   MONTAGEM DE ROTAS COM LOG (ajuda a descobrir path inválido)
-   NÃO use URL absoluta (https://...) como path de rota!
-   ========================================================= */
-function safeMount(mountPath, routerPath) {
-  try {
-    const r = require(routerPath);
-    app.use(mountPath, r);
-    console.log(`[OK] Mounted ${routerPath} at ${mountPath}`);
-  } catch (e) {
-    console.error(`[ERR] Failed while mounting ${routerPath} at ${mountPath}`);
-    console.error(e);
-    process.exit(1); // encerra para ficar claro qual arquivo quebrou
-  }
-}
+// Rotas
+app.use('/api/auth', require('./routes/auth'));
+app.use('/api/pets', require('./routes/pets'));
+app.use('/api/posts', require('./routes/posts'));
+app.use('/api/upload', require('./routes/upload'));
 
-// IMPORTANTE: sempre paths relativos aqui:
-safeMount('/api/auth', './routes/auth');
-safeMount('/api/pets', './routes/pets');
-safeMount('/api/posts', './routes/posts');
-safeMount('/api/upload', './routes/upload');
-
-/* =========================
-   Conexão ao MongoDB
-   ========================= */
-mongoose
-  .connect(process.env.MONGO_URI)
+// Mongo
+mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('MongoDB conectado'))
   .catch((err) => console.error('Erro MongoDB:', err));
 
-/* =========================
-   Tratamento de erros
-   ========================= */
+// Errors
 app.use((err, req, res, next) => {
   if (err && err.message === 'Not allowed by CORS') {
     return res.status(403).json({ msg: 'Origem não permitida pelo CORS', origin: req.headers.origin });
@@ -98,8 +62,6 @@ app.use((err, req, res, next) => {
   return res.status(500).json({ message: 'Erro interno do servidor' });
 });
 
-/* =========================
-   Start
-   ========================= */
+// Start
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}`));

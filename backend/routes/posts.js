@@ -1,46 +1,32 @@
 const express = require('express');
-const Pet = require('../models/Pet');                 // <-- corrige caminho
-const auth = require('../middleware/authMiddleware'); // <-- corrige caminho
+const Pet = require('../models/Pet');
+const auth = require('../middleware/auth');
 const router = express.Router();
 
-// Listar posts do pet
 router.get('/:petId', auth, async (req, res) => {
-  const { petId } = req.params;
-  const pet = await Pet.findOne({ _id: petId, owner: req.user.id });
+  const pet = await Pet.findOne({ _id: req.params.petId, owner: req.user.id });
   if (!pet) return res.status(404).json({ msg: 'Pet não encontrado' });
   res.json(pet.posts || []);
 });
 
-// Criar post
 router.post('/:petId', auth, async (req, res) => {
-  const { petId } = req.params;
-  const { type, media, caption } = req.body;
-  const pet = await Pet.findOne({ _id: petId, owner: req.user.id });
+  const pet = await Pet.findOne({ _id: req.params.petId, owner: req.user.id });
   if (!pet) return res.status(404).json({ msg: 'Pet não encontrado' });
-
-  const post = {
-    _id: String(Date.now()), // gera um id simples para o front mapear
-    type: type || 'image',
-    media: media || '',
-    caption: caption || '',
-    likes: 0,
-    comments: 0,
-    createdAt: new Date().toISOString(),
-  };
-
-  pet.posts.unshift(post); // adiciona no topo
+  const { type = 'image', media = '', caption = '' } = req.body || {};
+  const post = { _id: String(Date.now()), type, media, caption, likes: 0, comments: 0, createdAt: new Date() };
+  pet.posts.unshift(post);
   await pet.save();
   res.status(201).json(post);
 });
 
-// (Opcional) Curtir post
-router.post('/:petId/:index/like', auth, async (req, res) => {
-  const { petId, index } = req.params;
-  const pet = await Pet.findOne({ _id: petId, owner: req.user.id });
-  if (!pet || !pet.posts[index]) return res.status(404).json({ msg: 'Post não encontrado' });
-  pet.posts[index].likes = (pet.posts[index].likes || 0) + 1;
+router.post('/:petId/:postId/like', auth, async (req, res) => {
+  const pet = await Pet.findOne({ _id: req.params.petId, owner: req.user.id });
+  if (!pet) return res.status(404).json({ msg: 'Pet não encontrado' });
+  const post = pet.posts.find(p => p._id === req.params.postId);
+  if (!post) return res.status(404).json({ msg: 'Post não encontrado' });
+  post.likes = (post.likes || 0) + 1;
   await pet.save();
-  res.json(pet.posts[index]);
+  res.json(post);
 });
 
 module.exports = router;
