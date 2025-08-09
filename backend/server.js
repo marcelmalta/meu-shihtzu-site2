@@ -12,28 +12,25 @@ const app = express();
    ========================= */
 const clean = (u) => (u || '').replace(/\/+$/, '');
 const FRONTEND = clean(process.env.FRONTEND_URL) || 'http://localhost:5173';
-
 const allowedOrigins = new Set([
-  FRONTEND,                 // Render (sem barra no final)
-  'http://localhost:3000',  // CRA (se usar)
-  'http://localhost:5173',  // Vite
+  FRONTEND,                // ex.: https://seu-front.onrender.com
+  'http://localhost:3000', // CRA
+  'http://localhost:5173', // Vite
 ]);
 
 const corsOptions = {
   origin(origin, cb) {
-    // Permite ferramentas sem origin (Postman/CLI) e health checks
-    if (!origin) return cb(null, true);
+    if (!origin) return cb(null, true);          // Postman/CLI/health
     if (allowedOrigins.has(origin)) return cb(null, true);
     return cb(new Error('Not allowed by CORS'));
   },
   credentials: true,
   allowedHeaders: ['Content-Type', 'Authorization'],
-  methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+  methods: ['GET','HEAD','PUT','PATCH','POST','DELETE','OPTIONS'],
 };
 
 app.use(cors(corsOptions));
-// pré-flight explícito (alguns proxies exigem)
-app.options('*', cors(corsOptions));
+app.options('*', cors(corsOptions)); // pré-flight
 
 /* =========================
    Body parsers
@@ -47,13 +44,14 @@ app.use(express.urlencoded({ extended: true }));
 app.get('/health', (_req, res) => res.send('ok'));
 
 /* =========================
-   Arquivos estáticos (uploads locais, útil em dev)
+   Arquivos estáticos (dev)
    ========================= */
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-/* =========================
-   Rotas da API
-   ========================= */
+/* =========================================================
+   MONTAGEM DE ROTAS COM LOG (ajuda a descobrir path inválido)
+   NÃO use URL absoluta (https://...) como path de rota!
+   ========================================================= */
 function safeMount(mountPath, routerPath) {
   try {
     const r = require(routerPath);
@@ -62,10 +60,11 @@ function safeMount(mountPath, routerPath) {
   } catch (e) {
     console.error(`[ERR] Failed while mounting ${routerPath} at ${mountPath}`);
     console.error(e);
-    process.exit(1);
+    process.exit(1); // encerra para ficar claro qual arquivo quebrou
   }
 }
 
+// IMPORTANTE: sempre paths relativos aqui:
 safeMount('/api/auth', './routes/auth');
 safeMount('/api/pets', './routes/pets');
 safeMount('/api/posts', './routes/posts');
@@ -83,25 +82,18 @@ mongoose
    Tratamento de erros
    ========================= */
 app.use((err, req, res, next) => {
-  // CORS
   if (err && err.message === 'Not allowed by CORS') {
     return res.status(403).json({ msg: 'Origem não permitida pelo CORS', origin: req.headers.origin });
   }
-
-  // JSON inválido
   if (err instanceof SyntaxError && 'body' in err) {
     return res.status(400).json({ message: 'JSON inválido' });
   }
-
-  // Multer (upload) — tamanho/tipo
   if (err?.code === 'LIMIT_FILE_SIZE') {
     return res.status(413).json({ message: 'Arquivo excede o limite permitido' });
   }
   if (err?.message === 'Tipo de arquivo não permitido') {
     return res.status(400).json({ message: err.message });
   }
-
-  // Fallback
   console.error('[ERROR]', err);
   return res.status(500).json({ message: 'Erro interno do servidor' });
 });
