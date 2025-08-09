@@ -1,30 +1,27 @@
 import React, { useState } from "react";
 import { Box, Typography, Avatar, Button, Modal, TextField } from "@mui/material";
-import { Grid2 as Grid } from '@mui/material';
+import Grid from "@mui/material/Grid"; // 👈 Grid v1 estável
 import FeedCard from "./FeedCard";
 import type { Post } from "./FeedCard";
 
-// Tipo para álbum com data de upload (necessário para regra de limite)
 type AlbumPhoto = { url: string; dataUpload: string };
 
-// Tipo do perfil
 type PetProfile = {
   avatar: string;
   name: string;
   bio: string;
-  lastNameEdit: string; // data ISO da última edição do nome
+  lastNameEdit: string;
   album: AlbumPhoto[];
   posts: Post[];
 };
 
-const today = new Date().toISOString().slice(0, 10); // "2025-08-08"
+const today = new Date().toISOString().slice(0, 10);
 
-// Simule os dados do PET do usuário logado
 const petProfile: PetProfile = {
   avatar: "/uploads/luna-avatar.jpg",
   name: "Luna",
   bio: "Fofa, adora brincar e tomar banho de sol!",
-  lastNameEdit: "2025-07-25", // Data da última edição do nome
+  lastNameEdit: "2025-07-25",
   album: [
     { url: "/uploads/luna-banho.jpg", dataUpload: today },
     { url: "/uploads/luna-caminha.jpg", dataUpload: today },
@@ -42,7 +39,6 @@ const petProfile: PetProfile = {
       comments: 5,
       createdAt: "2025-08-08",
     }
-    // ...adicione mais posts deste pet se quiser
   ]
 };
 
@@ -52,23 +48,17 @@ const ProfilePage: React.FC = () => {
   const [petName, setPetName] = useState(petProfile.name);
   const [album, setAlbum] = useState<AlbumPhoto[]>(petProfile.album);
 
-  // --- Controle para edição do nome do pet (só a cada 15 dias) ---
   const lastEdit = new Date(petProfile.lastNameEdit);
   const now = new Date();
   const diffDays = Math.floor((now.getTime() - lastEdit.getTime()) / (1000 * 60 * 60 * 24));
   const canEditName = diffDays >= 15;
 
-  // --- Controle de fotos do álbum (máximo 2 por dia) ---
   const fotosHoje = album.filter(f => f.dataUpload === today).length;
   const canAddPhoto = fotosHoje < 2;
 
-  // Simulação do upload (adiciona imagem fake só pra ver o limite)
   const handleAddPhoto = () => {
     if (!canAddPhoto) return;
-    setAlbum([
-      ...album,
-      { url: "/uploads/novafoto.jpg", dataUpload: today }
-    ]);
+    setAlbum([...album, { url: "/uploads/novafoto.jpg", dataUpload: today }]);
   };
 
   return (
@@ -109,7 +99,6 @@ const ProfilePage: React.FC = () => {
           background: "#fff", p: 3, borderRadius: 4, boxShadow: 6, width: 320
         }}>
           <Typography fontWeight={700} mb={2}>Editar Perfil</Typography>
-          {/* Nome só editável se passou 15 dias */}
           <TextField
             fullWidth
             label="Nome do Pet"
@@ -123,7 +112,6 @@ const ProfilePage: React.FC = () => {
               Só é possível editar o nome novamente em {15 - diffDays} dias.
             </Typography>
           )}
-          {/* Editar bio livre */}
           <TextField
             fullWidth
             multiline
@@ -157,7 +145,7 @@ const ProfilePage: React.FC = () => {
         )}
         <Grid container spacing={1}>
           {album.map((img, idx) => (
-            <Grid xs={4} key={idx}>
+            <Grid item xs={4} key={idx}>
               <Box sx={{
                 width: "100%", aspectRatio: "1 / 1", borderRadius: 2, overflow: "hidden", border: "1px solid #eee"
               }}>

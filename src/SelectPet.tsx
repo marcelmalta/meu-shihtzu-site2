@@ -3,7 +3,7 @@ import {
   Box, Typography, Card, CardActionArea, Avatar, Button,
   Modal, TextField, CircularProgress
 } from "@mui/material";
-import { Grid2 as Grid } from '@mui/material';
+import Grid from "@mui/material/Grid"; // 👈 Grid v1 estável
 import { useNavigate } from "react-router-dom";
 
 type Pet = {
@@ -91,7 +91,7 @@ export default function SelectPet() {
       ) : (
         <Grid container spacing={2}>
           {pets.map((p) => (
-            <Grid xs={6} sm={4} md={3} key={p._id}>
+            <Grid item xs={6} sm={4} md={3} key={p._id}>
               <Card>
                 <CardActionArea
                   onClick={() => handleSelect(p)}
@@ -105,7 +105,7 @@ export default function SelectPet() {
           ))}
 
           {/* Card para criar novo */}
-          <Grid xs={6} sm={4} md={3}>
+          <Grid item xs={6} sm={4} md={3}>
             <Card>
               <CardActionArea
                 onClick={() => setOpen(true)}
