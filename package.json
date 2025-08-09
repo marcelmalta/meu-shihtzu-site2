@@ -20,13 +20,10 @@
     "web-vitals": "3.3.1"
   },
   "scripts": {
-    "prebuild": "npm ls @mui/material && node -e \"console.log('TS', require('typescript').version)\"",
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject",
-    "lint": "eslint ./src --ext .js,.jsx,.ts,.tsx",
-    "format": "prettier --write ./src"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "prebuild": "node -e \"console.log('TS', require('typescript').version)\""
   },
   "eslintConfig": {
     "extends": [
@@ -48,6 +45,8 @@
     ]
   },
   "devDependencies": {
-    "eslint-config-prettier": "^10.1.8"
+    "@vitejs/plugin-react-swc": "^4.0.0",
+    "eslint-config-prettier": "^10.1.8",
+    "vite": "^7.1.1"
   }
 }
