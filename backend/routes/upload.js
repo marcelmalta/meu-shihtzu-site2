@@ -4,21 +4,17 @@ const crypto = require('crypto');
 const multer = require('multer');
 const router = express.Router();
 
-const requireAuth = require('../middleware/auth'); // ajuste o caminho se necessário
+const requireAuth = require('../middleware/authMiddleware'); // <-- corrige caminho
 const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
 
 /**
- * ENVs necessárias (Render > Environment):
+ * ENVs (Render):
  *  - S3_BUCKET=shihtizuz-media
- *  - S3_REGION=auto                 // para Cloudflare R2 use "auto"
+ *  - S3_REGION=auto                           // R2 usa "auto"
  *  - S3_ENDPOINT=https://<ACCOUNT_ID>.r2.cloudflarestorage.com
- *  - S3_ACCESS_KEY_ID=<sua access key>
- *  - S3_SECRET_ACCESS_KEY=<seu secret>
- *  - S3_PUBLIC_BASE_URL=https://<seu_subdominio>.r2.dev  // ou seu domínio/CDN público apontando para o bucket
- *
- * Observações:
- *  - No R2, ative "Public Access" no bucket, ou sirva via domínio/CDN próprio.
- *  - Em AWS S3, S3_ENDPOINT pode ser omitido e S3_REGION deve ser a região real (ex.: us-east-1).
+ *  - S3_ACCESS_KEY_ID=...
+ *  - S3_SECRET_ACCESS_KEY=...
+ *  - S3_PUBLIC_BASE_URL=https://<seu_subdominio>.r2.dev  // domínio público/CDN
  */
 
 const s3 = new S3Client({
@@ -68,7 +64,7 @@ function extFrom(file) {
   return map[file.mimetype] || 'bin';
 }
 
-// ----- Rota: POST /api/upload  (multipart/form-data; campo "file") -----
+// POST /api/upload  (multipart/form-data; campo "file")
 router.post('/', requireAuth, upload.single('file'), async (req, res) => {
   try {
     if (!process.env.S3_BUCKET) {
@@ -89,15 +85,12 @@ router.post('/', requireAuth, upload.single('file'), async (req, res) => {
     // chave organizada por user/pet/data
     const key = `uploads/${userId}/${petId}/${Date.now()}-${rand}.${ext}`;
 
-    await s3.send(
-      new PutObjectCommand({
-        Bucket: process.env.S3_BUCKET,
-        Key: key,
-        Body: file.buffer,
-        ContentType: file.mimetype,
-        // Não setamos ACL aqui; no R2 use "Public Access" do bucket, ou sirva via CDN.
-      })
-    );
+    await s3.send(new PutObjectCommand({
+      Bucket: process.env.S3_BUCKET,
+      Key: key,
+      Body: file.buffer,
+      ContentType: file.mimetype,
+    }));
 
     const base = process.env.S3_PUBLIC_BASE_URL.replace(/\/+$/, '');
     const url = `${base}/${key}`;
@@ -110,10 +103,7 @@ router.post('/', requireAuth, upload.single('file'), async (req, res) => {
     });
   } catch (err) {
     console.error('[upload] erro:', err);
-    const msg =
-      err?.message === 'Tipo de arquivo não permitido'
-        ? err.message
-        : 'Falha no upload';
+    const msg = err?.message === 'Tipo de arquivo não permitido' ? err.message : 'Falha no upload';
     return res.status(500).json({ message: msg });
   }
 });

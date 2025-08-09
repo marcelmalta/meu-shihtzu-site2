@@ -1,6 +1,6 @@
 const express = require('express');
-const Pet = require('../models/Pet');
-const auth = require('../middleware/authMiddleware');
+const Pet = require('../models/Pet');                 // <-- corrige caminho
+const auth = require('../middleware/authMiddleware'); // <-- corrige caminho
 const router = express.Router();
 
 // Listar posts do pet
@@ -19,12 +19,13 @@ router.post('/:petId', auth, async (req, res) => {
   if (!pet) return res.status(404).json({ msg: 'Pet não encontrado' });
 
   const post = {
+    _id: String(Date.now()), // gera um id simples para o front mapear
     type: type || 'image',
     media: media || '',
     caption: caption || '',
     likes: 0,
     comments: 0,
-    createdAt: new Date().toISOString().slice(0, 10),
+    createdAt: new Date().toISOString(),
   };
 
   pet.posts.unshift(post); // adiciona no topo

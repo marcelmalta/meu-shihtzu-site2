@@ -1,6 +1,6 @@
 const express = require('express');
-const Pet = require('../models/Pet');
-const auth = require('../middleware/authMiddleware');
+const Pet = require('../models/Pet');                 // <-- corrige caminho
+const auth = require('../middleware/authMiddleware'); // <-- corrige caminho
 const router = express.Router();
 
 // Meus pets (lista para seleção)
@@ -33,7 +33,6 @@ router.put('/:id', auth, async (req, res) => {
 
   const { name, bio, avatar } = req.body;
   if (name && name !== pet.name) {
-    // regra simples de edição de nome (15 dias) — opcional
     const last = new Date(pet.lastNameEdit);
     const now = new Date();
     const diff = Math.floor((now - last) / (1000 * 60 * 60 * 24));
