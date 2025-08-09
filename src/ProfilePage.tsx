@@ -10,6 +10,8 @@ import {
   Stack,
   TextField,
   Typography,
+  LinearProgress,
+  Alert,
 } from "@mui/material";
 import Grid from "@mui/material/Grid"; // MUI Grid v1
 import { useNavigate, useParams } from "react-router-dom";
@@ -19,6 +21,7 @@ import {
   getPetById,
   getPostsByPetId,
   createPostForPet,
+  uploadMedia,
   setActivePet,
   type Pet,
   type PostDTO,
@@ -41,10 +44,15 @@ const ProfilePage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [pet, setPet] = useState<Pet | null>(null);
   const [posts, setPosts] = useState<PostDTO[]>([]);
+  const [pageError, setPageError] = useState("");
 
+  // composer
   const [caption, setCaption] = useState("");
   const [media, setMedia] = useState("");
   const [type, setType] = useState<"image" | "video" | "text">("image");
+  const [upLoading, setUpLoading] = useState(false);
+  const [upError, setUpError] = useState("");
+  const [posting, setPosting] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -52,24 +60,31 @@ const ProfilePage: React.FC = () => {
       if (!petId) return;
       try {
         setLoading(true);
-        // tenta /pets/:id; se não houver no back, cai para /my-pets
+        setPageError("");
+
+        // tenta /pets/:id; fallback /my-pets
         let p: Pet | null = null;
         try {
-          const single = await getPetById(petId);
+          const single = await getPetById(pIdSan(petId));
           p = single.data;
         } catch {
           const mine = await getMyPets();
           p = mine.data.find((x) => x._id === petId) || null;
         }
+
         if (!p) {
           nav("/selecionar-pet", { replace: true });
           return;
         }
+
         const list = await getPostsByPetId(p._id);
         if (!alive) return;
+
         setPet(p);
         setActivePet(p);
         setPosts(list.data);
+      } catch (e: any) {
+        setPageError(e?.response?.data?.message || e?.message || "Falha ao carregar perfil");
       } finally {
         if (alive) setLoading(false);
       }
@@ -79,19 +94,54 @@ const ProfilePage: React.FC = () => {
     };
   }, [petId, nav]);
 
+  function pIdSan(id: string) {
+    // pequena sanitização para evitar espaços/slug acidental
+    return id.trim();
+  }
+
   async function handleCreatePost() {
     if (!pet) return;
     if (!caption.trim() && !media.trim()) return;
-    await createPostForPet(pet._id, {
-      type,
-      media: media.trim() || undefined,
-      caption: caption.trim() || undefined,
-    });
-    const list = await getPostsByPetId(pet._id);
-    setPosts(list.data);
-    setCaption("");
-    setMedia("");
-    setType("image");
+    try {
+      setPosting(true);
+      await createPostForPet(pet._id, {
+        type,
+        media: media.trim() || undefined,
+        caption: caption.trim() || undefined,
+      });
+      const list = await getPostsByPetId(pet._id);
+      setPosts(list.data);
+      setCaption("");
+      setMedia("");
+      setType("image");
+    } catch (e: any) {
+      setPageError(e?.response?.data?.message || e?.message || "Falha ao publicar");
+    } finally {
+      setPosting(false);
+    }
+  }
+
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUpError("");
+    setUpLoading(true);
+    try {
+      // passa o petId para o backend organizar a chave no R2/S3
+      const res = await uploadMedia(file, pet?._id);
+      const url = res.data.url;
+      setMedia(url);
+      // define type automaticamente
+      if (file.type.startsWith("video/")) setType("video");
+      else if (file.type.startsWith("image/")) setType("image");
+      else setType("text");
+    } catch (err: any) {
+      setUpError(err?.response?.data?.message || err?.message || "Falha no upload");
+    } finally {
+      setUpLoading(false);
+      // reseta input pra poder reenviar o mesmo arquivo se quiser
+      e.currentTarget.value = "";
+    }
   }
 
   const feedPosts: FeedPost[] = useMemo(
@@ -111,6 +161,11 @@ const ProfilePage: React.FC = () => {
     return (
       <Container maxWidth="md" sx={{ py: 3 }}>
         <Typography>Carregando...</Typography>
+        {pageError && (
+          <Alert sx={{ mt: 2 }} severity="error">
+            {pageError}
+          </Alert>
+        )}
       </Container>
     );
   }
@@ -135,7 +190,7 @@ const ProfilePage: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Composer */}
+      {/* Composer com upload */}
       <Card sx={{ mb: 2 }}>
         <CardContent>
           <Grid container spacing={2}>
@@ -149,38 +204,81 @@ const ProfilePage: React.FC = () => {
                 multiline
               />
             </Grid>
+
             <Grid item xs={12} md={8}>
               <TextField
                 label="URL da mídia (opcional)"
                 value={media}
                 onChange={(e) => setMedia(e.target.value)}
-                placeholder="https://..."
+                placeholder="Cole uma URL ou envie um arquivo abaixo"
                 fullWidth
               />
             </Grid>
+
             <Grid item xs={12} md={4}>
-              <TextField
-                label="Tipo"
-                select
-                SelectProps={{ native: true }}
-                value={type}
-                onChange={(e) => setType(e.target.value as any)}
+              <Button
+                component="label"
+                variant="outlined"
                 fullWidth
+                disabled={upLoading}
               >
-                <option value="image">image</option>
-                <option value="video">video</option>
-                <option value="text">text</option>
-              </TextField>
+                {upLoading ? "Enviando..." : "Enviar arquivo"}
+                <input
+                  type="file"
+                  hidden
+                  onChange={handleFile}
+                  accept="image/*,video/*"
+                />
+              </Button>
             </Grid>
+
+            {upLoading && (
+              <Grid item xs={12}>
+                <LinearProgress />
+              </Grid>
+            )}
+            {!!upError && (
+              <Grid item xs={12}>
+                <Alert severity="error">{upError}</Alert>
+              </Grid>
+            )}
+
+            {/* Preview simples quando houver mídia */}
+            {!!media && (
+              <Grid item xs={12}>
+                {type === "image" ? (
+                  <Box
+                    component="img"
+                    src={media}
+                    alt="preview"
+                    sx={{ maxWidth: "100%", borderRadius: 2 }}
+                  />
+                ) : type === "video" ? (
+                  <Box
+                    component="video"
+                    src={media}
+                    controls
+                    sx={{ width: "100%", borderRadius: 2 }}
+                  />
+                ) : null}
+              </Grid>
+            )}
+
             <Grid item xs={12} display="flex" justifyContent="flex-end">
               <Button
                 variant="contained"
                 onClick={handleCreatePost}
-                disabled={!caption.trim() && !media.trim()}
+                disabled={posting || (!caption.trim() && !media.trim())}
               >
-                Publicar
+                {posting ? "Publicando..." : "Publicar"}
               </Button>
             </Grid>
+
+            {!!pageError && (
+              <Grid item xs={12}>
+                <Alert severity="error">{pageError}</Alert>
+              </Grid>
+            )}
           </Grid>
         </CardContent>
       </Card>
@@ -188,7 +286,6 @@ const ProfilePage: React.FC = () => {
       {/* Feed */}
       <Stack spacing={2}>
         {feedPosts.map((fp) => (
-          // adapte se o FeedCard tiver props diferentes
           <FeedCard key={fp.id} post={fp as any} />
         ))}
         {!feedPosts.length && (
