@@ -1,177 +1,203 @@
-import React, { useState } from "react";
-import { Box, Typography, Avatar, Button, Modal, TextField } from "@mui/material";
-import Grid from "@mui/material/Grid"; // 👈 Grid v1 estável
+// src/ProfilePage.tsx
+import React, { useEffect, useMemo, useState } from "react";
+import {
+  Avatar,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Container,
+  Stack,
+  TextField,
+  Typography,
+} from "@mui/material";
+import Grid from "@mui/material/Grid"; // MUI Grid v1
+import { useNavigate, useParams } from "react-router-dom";
 import FeedCard from "./FeedCard";
-import type { Post } from "./FeedCard";
+import {
+  getMyPets,
+  getPetById,
+  getPostsByPetId,
+  createPostForPet,
+  setActivePet,
+  type Pet,
+  type PostDTO,
+} from "./services/api";
 
-type AlbumPhoto = { url: string; dataUpload: string };
-
-type PetProfile = {
-  avatar: string;
-  name: string;
-  bio: string;
-  lastNameEdit: string;
-  album: AlbumPhoto[];
-  posts: Post[];
-};
-
-const today = new Date().toISOString().slice(0, 10);
-
-const petProfile: PetProfile = {
-  avatar: "/uploads/luna-avatar.jpg",
-  name: "Luna",
-  bio: "Fofa, adora brincar e tomar banho de sol!",
-  lastNameEdit: "2025-07-25",
-  album: [
-    { url: "/uploads/luna-banho.jpg", dataUpload: today },
-    { url: "/uploads/luna-caminha.jpg", dataUpload: today },
-    { url: "/uploads/luna-fantasia.jpg", dataUpload: "2025-07-25" }
-  ],
-  posts: [
-    {
-      id: 1,
-      petName: "Luna",
-      owner: "Mariana",
-      type: "image",
-      media: "/uploads/luna-banho.jpg",
-      caption: "Hoje foi dia de banho!",
-      likes: 22,
-      comments: 5,
-      createdAt: "2025-08-08",
-    }
-  ]
+type FeedPost = {
+  id: string;
+  petName: string;
+  owner?: string;
+  type: "image" | "video" | "text";
+  media?: string;
+  caption?: string;
+  createdAt?: string;
 };
 
 const ProfilePage: React.FC = () => {
-  const [openEdit, setOpenEdit] = useState(false);
-  const [bio, setBio] = useState(petProfile.bio);
-  const [petName, setPetName] = useState(petProfile.name);
-  const [album, setAlbum] = useState<AlbumPhoto[]>(petProfile.album);
+  const { petId } = useParams<{ petId: string }>();
+  const nav = useNavigate();
 
-  const lastEdit = new Date(petProfile.lastNameEdit);
-  const now = new Date();
-  const diffDays = Math.floor((now.getTime() - lastEdit.getTime()) / (1000 * 60 * 60 * 24));
-  const canEditName = diffDays >= 15;
+  const [loading, setLoading] = useState(true);
+  const [pet, setPet] = useState<Pet | null>(null);
+  const [posts, setPosts] = useState<PostDTO[]>([]);
 
-  const fotosHoje = album.filter(f => f.dataUpload === today).length;
-  const canAddPhoto = fotosHoje < 2;
+  const [caption, setCaption] = useState("");
+  const [media, setMedia] = useState("");
+  const [type, setType] = useState<"image" | "video" | "text">("image");
 
-  const handleAddPhoto = () => {
-    if (!canAddPhoto) return;
-    setAlbum([...album, { url: "/uploads/novafoto.jpg", dataUpload: today }]);
-  };
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      if (!petId) return;
+      try {
+        setLoading(true);
+        // tenta /pets/:id; se não houver no back, cai para /my-pets
+        let p: Pet | null = null;
+        try {
+          const single = await getPetById(petId);
+          p = single.data;
+        } catch {
+          const mine = await getMyPets();
+          p = mine.data.find((x) => x._id === petId) || null;
+        }
+        if (!p) {
+          nav("/selecionar-pet", { replace: true });
+          return;
+        }
+        const list = await getPostsByPetId(p._id);
+        if (!alive) return;
+        setPet(p);
+        setActivePet(p);
+        setPosts(list.data);
+      } finally {
+        if (alive) setLoading(false);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [petId, nav]);
+
+  async function handleCreatePost() {
+    if (!pet) return;
+    if (!caption.trim() && !media.trim()) return;
+    await createPostForPet(pet._id, {
+      type,
+      media: media.trim() || undefined,
+      caption: caption.trim() || undefined,
+    });
+    const list = await getPostsByPetId(pet._id);
+    setPosts(list.data);
+    setCaption("");
+    setMedia("");
+    setType("image");
+  }
+
+  const feedPosts: FeedPost[] = useMemo(
+    () =>
+      posts.map((p0) => ({
+        id: p0._id,
+        petName: pet?.name || "",
+        type: p0.type,
+        media: p0.media,
+        caption: p0.caption,
+        createdAt: p0.createdAt,
+      })),
+    [posts, pet]
+  );
+
+  if (loading) {
+    return (
+      <Container maxWidth="md" sx={{ py: 3 }}>
+        <Typography>Carregando...</Typography>
+      </Container>
+    );
+  }
+  if (!pet) return null;
 
   return (
-    <Box sx={{
-      bgcolor: "#f0f2f5",
-      minHeight: "100vh",
-      pb: 8,
-      maxWidth: 500,
-      mx: "auto",
-      fontFamily: "Arial, 'Segoe UI', Roboto, sans-serif"
-    }}>
-      {/* Header do perfil */}
-      <Box sx={{
-        background: "#fff",
-        p: 3,
-        borderBottomLeftRadius: 22,
-        borderBottomRightRadius: 22,
-        boxShadow: "0 2px 12px #0001",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center"
-      }}>
-        <Avatar src={petProfile.avatar} sx={{ width: 94, height: 94, mb: 1.5, border: "4px solid #ff7800" }} />
-        <Typography sx={{ fontWeight: 700, fontSize: "1.23rem" }}>{petName}</Typography>
-        <Typography sx={{ color: "#222", fontSize: "1rem", mb: 1, textAlign: "center" }}>
-          {bio}
-        </Typography>
-        <Button
-          onClick={() => setOpenEdit(true)}
-          sx={{ bgcolor: "#ff7800", color: "#fff", fontWeight: 600, px: 2, borderRadius: 2, mb: 1, ":hover": { bgcolor: "#b25600" } }}
-        >Editar perfil</Button>
-      </Box>
+    <Container maxWidth="md" sx={{ py: 2 }}>
+      {/* Cabeçalho do perfil */}
+      <Card sx={{ mb: 2 }}>
+        <CardContent>
+          <Stack direction="row" spacing={2} alignItems="center">
+            <Avatar src={pet.avatar} sx={{ width: 72, height: 72 }} />
+            <Box>
+              <Typography variant="h6">{pet.name}</Typography>
+              {pet.bio && (
+                <Typography variant="body2" color="text.secondary">
+                  {pet.bio}
+                </Typography>
+              )}
+            </Box>
+          </Stack>
+        </CardContent>
+      </Card>
 
-      {/* Modal de edição completa */}
-      <Modal open={openEdit} onClose={() => setOpenEdit(false)}>
-        <Box sx={{
-          position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)",
-          background: "#fff", p: 3, borderRadius: 4, boxShadow: 6, width: 320
-        }}>
-          <Typography fontWeight={700} mb={2}>Editar Perfil</Typography>
-          <TextField
-            fullWidth
-            label="Nome do Pet"
-            value={petName}
-            onChange={e => setPetName(e.target.value)}
-            sx={{ mb: 2 }}
-            disabled={!canEditName}
-          />
-          {!canEditName && (
-            <Typography sx={{ color: "red", mb: 1, fontSize: "0.85rem" }}>
-              Só é possível editar o nome novamente em {15 - diffDays} dias.
-            </Typography>
-          )}
-          <TextField
-            fullWidth
-            multiline
-            rows={3}
-            label="Bio"
-            value={bio}
-            onChange={(e) => setBio(e.target.value)}
-            sx={{ mb: 2 }}
-          />
-          <Button onClick={() => setOpenEdit(false)} variant="contained" sx={{ bgcolor: "#ff7800", ":hover": { bgcolor: "#b25600" } }}>Salvar</Button>
-        </Box>
-      </Modal>
+      {/* Composer */}
+      <Card sx={{ mb: 2 }}>
+        <CardContent>
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <TextField
+                label="Legenda"
+                value={caption}
+                onChange={(e) => setCaption(e.target.value)}
+                placeholder="Escreva algo..."
+                fullWidth
+                multiline
+              />
+            </Grid>
+            <Grid item xs={12} md={8}>
+              <TextField
+                label="URL da mídia (opcional)"
+                value={media}
+                onChange={(e) => setMedia(e.target.value)}
+                placeholder="https://..."
+                fullWidth
+              />
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <TextField
+                label="Tipo"
+                select
+                SelectProps={{ native: true }}
+                value={type}
+                onChange={(e) => setType(e.target.value as any)}
+                fullWidth
+              >
+                <option value="image">image</option>
+                <option value="video">video</option>
+                <option value="text">text</option>
+              </TextField>
+            </Grid>
+            <Grid item xs={12} display="flex" justifyContent="flex-end">
+              <Button
+                variant="contained"
+                onClick={handleCreatePost}
+                disabled={!caption.trim() && !media.trim()}
+              >
+                Publicar
+              </Button>
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
 
-      {/* Álbum de fotos do pet */}
-      <Box sx={{ background: "#fff", mt: 2, p: 2, borderRadius: 3, mb: 2 }}>
-        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}>
-          <Typography fontWeight={700} fontSize="1.1rem">Álbum de Fotos</Typography>
-          <Button
-            size="small"
-            disabled={!canAddPhoto}
-            onClick={handleAddPhoto}
-            sx={{ bgcolor: "#ff7800", color: "#fff", ":hover": { bgcolor: "#b25600" }, minWidth: 0, px: 1, fontSize: "0.88rem" }}
-          >
-            Adicionar Foto
-          </Button>
-        </Box>
-        {!canAddPhoto && (
-          <Typography sx={{ color: "red", mb: 1, fontSize: "0.85rem" }}>
-            Só é possível adicionar 2 fotos por dia no álbum.
+      {/* Feed */}
+      <Stack spacing={2}>
+        {feedPosts.map((fp) => (
+          // adapte se o FeedCard tiver props diferentes
+          <FeedCard key={fp.id} post={fp as any} />
+        ))}
+        {!feedPosts.length && (
+          <Typography color="text.secondary">
+            Ainda não há posts para este pet.
           </Typography>
         )}
-        <Grid container spacing={1}>
-          {album.map((img, idx) => (
-            <Grid item xs={4} key={idx}>
-              <Box sx={{
-                width: "100%", aspectRatio: "1 / 1", borderRadius: 2, overflow: "hidden", border: "1px solid #eee"
-              }}>
-                <img src={img.url} alt={`foto-album-${idx + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-              </Box>
-            </Grid>
-          ))}
-        </Grid>
-      </Box>
-
-      {/* Lista dos posts do PET */}
-      <Box sx={{ mt: 2 }}>
-        <Typography fontWeight={700} fontSize="1.13rem" mb={1} sx={{ px: 1 }}>Minhas Postagens</Typography>
-        <Box sx={{
-          display: "flex", flexDirection: "column", gap: 2, px: 0.5
-        }}>
-          {petProfile.posts.map(post => (
-            <FeedCard
-              key={post.id}
-              post={post}
-              onClick={() => { /* abrir detalhamento se quiser */ }}
-            />
-          ))}
-        </Box>
-      </Box>
-    </Box>
+      </Stack>
+    </Container>
   );
 };
 

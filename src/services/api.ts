@@ -1,7 +1,11 @@
+// src/services/api.ts
 import axios from "axios";
 
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000",
+  baseURL:
+    import.meta.env.VITE_API_URL ||
+    (import.meta as any).env?.REACT_APP_API_URL ||
+    "http://localhost:5000",
 });
 
 export const setAuthToken = (token?: string) => {
@@ -26,17 +30,40 @@ export const loginUser = (email: string, password: string) =>
   api.post("/api/auth/login", { email, password });
 
 // ----- Pets -----
-export const getMyPets = () => api.get("/api/pets/my-pets");
+export type Pet = { _id: string; name: string; avatar?: string; bio?: string; owner?: string };
+
+export const getMyPets = () => api.get<Pet[]>("/api/pets/my-pets");
 export const createPet = (payload: { name: string; bio?: string; avatar?: string }) =>
-  api.post("/api/pets/create", payload);
+  api.post<Pet>("/api/pets/create", payload);
+
+// opcional (se tiver endpoint no back). Se não tiver, o front faz fallback por /my-pets.
+export const getPetById = (id: string) => api.get<Pet>(`/api/pets/${id}`);
+
+// ----- Posts -----
+export type PostDTO = {
+  _id: string;
+  petId: string;
+  type: "image" | "video" | "text";
+  media?: string;
+  caption?: string;
+  createdAt: string;
+};
+
+export const getPostsByPetId = (petId: string) =>
+  api.get<PostDTO[]>(`/api/posts/${petId}`);
+
+export const createPostForPet = (
+  petId: string,
+  payload: { type: "image" | "video" | "text"; media?: string; caption?: string }
+) => api.post<PostDTO>(`/api/posts/${petId}`, payload);
 
 // ----- Pet Ativo (localStorage) -----
-export const setActivePet = (pet: any) =>
+export const setActivePet = (pet: Pet) =>
   localStorage.setItem("activePet", JSON.stringify(pet));
 
-export const getActivePet = () => {
+export const getActivePet = (): Pet | null => {
   const raw = localStorage.getItem("activePet");
-  return raw ? JSON.parse(raw) : null;
+  return raw ? (JSON.parse(raw) as Pet) : null;
 };
 
 export const clearActivePet = () => localStorage.removeItem("activePet");

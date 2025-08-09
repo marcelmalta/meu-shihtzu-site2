@@ -1,11 +1,69 @@
+// src/Header.tsx
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { Box, Button, IconButton } from "@mui/material";
+import {
+  Box,
+  Button,
+  IconButton,
+  Avatar,
+  Menu,
+  MenuItem,
+  Tooltip,
+  Divider,
+  Drawer,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemText,
+  Stack,
+  Typography,
+} from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
+import PetsIcon from "@mui/icons-material/Pets";
+
+// serviços (axios) já existentes no seu projeto
+import {
+  getActivePet as getActivePetLS,
+  clearActivePet,
+  setAuthToken,
+  type Pet,
+} from "./services/api";
 
 const Header: React.FC = () => {
   const navigate = useNavigate();
+
+  // drawer lateral (menu)
   const [open, setOpen] = React.useState(false);
+
+  // menu da conta (avatar)
+  const [anchorUser, setAnchorUser] = React.useState<null | HTMLElement>(null);
+
+  // pet ativo mostrado no header
+  const [activePet, setActivePet] = React.useState<Pet | null>(getActivePetLS());
+
+  // sincroniza quando mudar em outras abas / ao voltar de páginas
+  React.useEffect(() => {
+    const sync = () => setActivePet(getActivePetLS());
+    window.addEventListener("storage", sync);
+    const id = setInterval(sync, 1000); // pequeno polling garante atualização local
+    return () => {
+      window.removeEventListener("storage", sync);
+      clearInterval(id);
+    };
+  }, []);
+
+  const go = (to: string) => {
+    navigate(to);
+    setOpen(false);
+    setAnchorUser(null);
+  };
+
+  const logout = () => {
+    setAuthToken(undefined); // remove Authorization + token do localStorage
+    clearActivePet();
+    setAnchorUser(null);
+    navigate("/login");
+  };
 
   return (
     <Box
@@ -23,6 +81,7 @@ const Header: React.FC = () => {
         zIndex: 10,
       }}
     >
+      {/* BG */}
       <img
         src="/img/shih-background.png"
         alt="Shih Tzu background"
@@ -37,6 +96,8 @@ const Header: React.FC = () => {
           zIndex: 1,
         }}
       />
+
+      {/* Título / Logo */}
       <Button
         onClick={() => navigate("/")}
         sx={{
@@ -56,20 +117,130 @@ const Header: React.FC = () => {
       >
         SHIHTIZUz
       </Button>
-      <IconButton
-        sx={{
-          position: "absolute",
-          top: 18,
-          right: 16,
-          color: "#fff",
-          zIndex: 3,
-        }}
-        aria-label="menu"
-        onClick={() => setOpen(true)}
+
+      {/* Ações à direita: avatar do pet + burger */}
+      <Stack
+        direction="row"
+        spacing={1}
+        sx={{ position: "absolute", top: 14, right: 16, zIndex: 3 }}
+        alignItems="center"
       >
-        <MenuIcon sx={{ fontSize: 38 }} />
-      </IconButton>
-      {/* Drawer do menu lateral pode ser adicionado aqui */}
+        {/* Botão Postar rápido (vai para o perfil do pet) */}
+        <Button
+          onClick={() =>
+            go(activePet ? `/perfil/${activePet._id}` : "/selecionar-pet")
+          }
+          startIcon={<PetsIcon />}
+          sx={{
+            display: { xs: "none", sm: "inline-flex" },
+            color: "#111",
+            bgcolor: "#fff",
+            textTransform: "none",
+            fontWeight: 700,
+            borderRadius: 2,
+            "&:hover": { bgcolor: "#f2f2f2" },
+          }}
+        >
+          {activePet ? `Perfil de ${activePet.name}` : "Selecionar pet"}
+        </Button>
+
+        {/* Avatar do Pet Ativo */}
+        <Tooltip
+          title={
+            activePet ? `Conta do pet: ${activePet.name}` : "Selecionar pet"
+          }
+        >
+          <IconButton
+            onClick={(e) => setAnchorUser(e.currentTarget)}
+            sx={{ p: 0.5 }}
+          >
+            <Avatar
+              alt={activePet?.name || "Conta"}
+              src={activePet?.avatar || "/img/default-avatar.png"}
+              sx={{ width: 40, height: 40, border: "2px solid #fff3" }}
+            />
+          </IconButton>
+        </Tooltip>
+
+        {/* Burger menu (drawer lateral) */}
+        <IconButton
+          aria-label="menu"
+          onClick={() => setOpen(true)}
+          sx={{
+            color: "#fff",
+          }}
+        >
+          <MenuIcon sx={{ fontSize: 36 }} />
+        </IconButton>
+      </Stack>
+
+      {/* Menu da conta (avatar) */}
+      <Menu
+        anchorEl={anchorUser}
+        open={Boolean(anchorUser)}
+        onClose={() => setAnchorUser(null)}
+        anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
+        transformOrigin={{ horizontal: "right", vertical: "top" }}
+      >
+        <Box sx={{ px: 2, pt: 1, pb: 1 }}>
+          <Typography variant="subtitle2" fontWeight={700}>
+            {activePet?.name || "Sem pet selecionado"}
+          </Typography>
+          {activePet?.bio && (
+            <Typography variant="caption" color="text.secondary">
+              {activePet.bio}
+            </Typography>
+          )}
+        </Box>
+        <Divider />
+        <MenuItem
+          onClick={() =>
+            go(activePet ? `/perfil/${activePet._id}` : "/selecionar-pet")
+          }
+        >
+          Meu perfil
+        </MenuItem>
+        <MenuItem onClick={() => go("/selecionar-pet")}>Trocar de pet</MenuItem>
+        <Divider />
+        <MenuItem onClick={logout}>Sair</MenuItem>
+      </Menu>
+
+      {/* Drawer lateral (atalhos básicos) */}
+      <Drawer anchor="right" open={open} onClose={() => setOpen(false)}>
+        <Box sx={{ width: 280 }} role="presentation">
+          <List>
+            <ListItem disablePadding>
+              <ListItemButton onClick={() => go("/")}>
+                <ListItemText primary="Início" />
+              </ListItemButton>
+            </ListItem>
+            <ListItem disablePadding>
+              <ListItemButton
+                onClick={() =>
+                  go(activePet ? `/perfil/${activePet._id}` : "/selecionar-pet")
+                }
+              >
+                <ListItemText
+                  primary={activePet ? `Perfil de ${activePet.name}` : "Selecionar pet"}
+                />
+              </ListItemButton>
+            </ListItem>
+            <ListItem disablePadding>
+              <ListItemButton onClick={() => go("/selecionar-pet")}>
+                <ListItemText primary="Trocar de pet" />
+              </ListItemButton>
+            </ListItem>
+          </List>
+          <Divider />
+          <List>
+            <ListItem disablePadding>
+              <ListItemButton onClick={() => go("/sobre")}>
+                <ListItemText primary="Sobre" />
+              </ListItemButton>
+            </ListItem>
+          </List>
+        </Box>
+      </Drawer>
     </Box>
   );
 };

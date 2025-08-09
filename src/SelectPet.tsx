@@ -1,71 +1,57 @@
-import { useEffect, useState } from "react";
+// src/SelectPet.tsx
+import React, { useEffect, useState } from "react";
 import {
-  Box, Typography, Card, CardActionArea, Avatar, Button,
-  Modal, TextField, CircularProgress
+  Avatar,
+  Box,
+  Button,
+  Card,
+  CardActionArea,
+  CardContent,
+  Container,
+  Modal,
+  Stack,
+  TextField,
+  Typography,
+  CircularProgress,
 } from "@mui/material";
-import Grid from "@mui/material/Grid"; // 👈 Grid v1 estável
+import Grid from "@mui/material/Grid"; // MUI Grid v1
 import { useNavigate } from "react-router-dom";
+import {
+  getMyPets,
+  createPet,
+  setActivePet,
+  type Pet,
+} from "./services/api";
 
-type Pet = {
-  _id: string;
-  name: string;
-  avatar?: string;
-  bio?: string;
-};
-
-const API = (import.meta as any).env?.VITE_API_URL || "http://localhost:5000";
-
-export default function SelectPet() {
+const SelectPet: React.FC = () => {
   const [pets, setPets] = useState<Pet[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  // modal criar
   const [open, setOpen] = useState(false);
-  const [name, setName] = useState("Luna");
-  const [bio, setBio] = useState("Fofa, adora brincar!");
-  const [avatar, setAvatar] = useState("/uploads/luna-avatar.jpg");
-  const [error, setError] = useState<string>("");
+  const [name, setName] = useState("");
+  const [avatar, setAvatar] = useState("");
+  const [bio, setBio] = useState("");
+
   const nav = useNavigate();
-
-  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-
-  const authHeaders = {
-    Authorization: `Bearer ${token}`,
-    "Content-Type": "application/json",
-  };
 
   const loadPets = async () => {
     try {
       setLoading(true);
       setError("");
-      const res = await fetch(`${API}/api/pets/my-pets`, { headers: authHeaders as any });
-      if (!res.ok) throw new Error(await res.text());
-      const data = await res.json();
-      setPets(data || []);
+      const res = await getMyPets();
+      setPets(res.data || []);
     } catch (e: any) {
+      if (e?.response?.status === 401) {
+        localStorage.removeItem("token");
+        nav("/login");
+        return;
+      }
       setError(e?.message || "Falha ao carregar pets");
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleCreate = async () => {
-    try {
-      setError("");
-      const res = await fetch(`${API}/api/pets/create`, {
-        method: "POST",
-        headers: authHeaders as any,
-        body: JSON.stringify({ name, bio, avatar }),
-      });
-      if (!res.ok) throw new Error(await res.text());
-      await loadPets();
-      setOpen(false);
-    } catch (e: any) {
-      setError(e?.message || "Falha ao criar pet");
-    }
-  };
-
-  const handleSelect = (pet: Pet) => {
-    localStorage.setItem("activePet", JSON.stringify(pet));
-    nav(`/perfil/${pet._id}`);
   };
 
   useEffect(() => {
@@ -73,72 +59,131 @@ export default function SelectPet() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return (
-    <Box sx={{ maxWidth: 920, mx: "auto", p: 2 }}>
-      <Typography variant="h5" fontWeight={800} mb={1}>Selecione seu Pet</Typography>
-      <Typography color="text.secondary" mb={2}>
-        Escolha um pet para usar no site ou crie um novo.
-      </Typography>
+  const handleCreate = async () => {
+    if (!name.trim()) return;
+    try {
+      setError("");
+      const res = await createPet({
+        name: name.trim(),
+        bio: bio.trim() || undefined,
+        avatar: avatar.trim() || undefined,
+      });
+      setPets((prev) => [res.data, ...prev]);
+      setOpen(false);
+      setName("");
+      setAvatar("");
+      setBio("");
+    } catch (e: any) {
+      setError(e?.message || "Falha ao criar pet");
+    }
+  };
 
-      {error && (
-        <Typography color="error" mb={2}>{error}</Typography>
-      )}
+  const handleSelect = (pet: Pet) => {
+    setActivePet(pet);
+    nav(`/perfil/${pet._id}`);
+  };
+
+  return (
+    <Container maxWidth="md" sx={{ py: 3 }}>
+      <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
+        <Typography variant="h6">Selecione um pet</Typography>
+        <Button variant="contained" onClick={() => setOpen(true)}>
+          Criar novo pet
+        </Button>
+      </Stack>
 
       {loading ? (
-        <Box sx={{ display: "grid", placeItems: "center", height: 200 }}>
+        <Box display="flex" justifyContent="center" py={6}>
           <CircularProgress />
         </Box>
       ) : (
         <Grid container spacing={2}>
           {pets.map((p) => (
-            <Grid item xs={6} sm={4} md={3} key={p._id}>
+            <Grid item xs={12} sm={6} md={4} key={p._id}>
               <Card>
-                <CardActionArea
-                  onClick={() => handleSelect(p)}
-                  sx={{ p: 2, display: "grid", placeItems: "center", gap: 1 }}
-                >
-                  <Avatar src={p.avatar} sx={{ width: 84, height: 84, border: "3px solid #ff7800" }} />
-                  <Typography fontWeight={700}>{p.name}</Typography>
+                <CardActionArea onClick={() => handleSelect(p)}>
+                  <CardContent>
+                    <Stack alignItems="center" spacing={1.5}>
+                      <Avatar src={p.avatar} sx={{ width: 72, height: 72 }} />
+                      <Typography fontWeight={700}>{p.name}</Typography>
+                      {p.bio && (
+                        <Typography variant="body2" color="text.secondary" noWrap>
+                          {p.bio}
+                        </Typography>
+                      )}
+                      <Button variant="contained" fullWidth>
+                        Entrar como {p.name}
+                      </Button>
+                    </Stack>
+                  </CardContent>
                 </CardActionArea>
               </Card>
             </Grid>
           ))}
-
-          {/* Card para criar novo */}
-          <Grid item xs={6} sm={4} md={3}>
-            <Card>
-              <CardActionArea
-                onClick={() => setOpen(true)}
-                sx={{ p: 2, display: "grid", placeItems: "center", gap: 1 }}
-              >
-                <Avatar sx={{ width: 84, height: 84, bgcolor: "#ff7800" }}>+</Avatar>
-                <Typography fontWeight={700}>Adicionar Pet</Typography>
-              </CardActionArea>
-            </Card>
-          </Grid>
+          {!pets.length && (
+            <Grid item xs={12}>
+              <Typography color="text.secondary">
+                Você ainda não cadastrou nenhum pet.
+              </Typography>
+            </Grid>
+          )}
         </Grid>
       )}
 
-      {/* Modal: criar novo pet */}
+      {!!error && (
+        <Typography mt={2} color="error">
+          {error}
+        </Typography>
+      )}
+
       <Modal open={open} onClose={() => setOpen(false)}>
-        <Box sx={{
-          position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)",
-          width: 380, bgcolor: "#fff", p: 3, borderRadius: 3, boxShadow: 6
-        }}>
-          <Typography variant="h6" fontWeight={800} mb={2}>Novo Pet</Typography>
-          <TextField label="Nome" fullWidth sx={{ mb: 2 }} value={name} onChange={(e) => setName(e.target.value)} />
-          <TextField label="Avatar (URL)" fullWidth sx={{ mb: 2 }} value={avatar} onChange={(e) => setAvatar(e.target.value)} />
-          <TextField label="Bio" fullWidth multiline rows={3} sx={{ mb: 2 }} value={bio} onChange={(e) => setBio(e.target.value)} />
-          <Button
-            fullWidth
-            variant="contained"
-            onClick={handleCreate}
-            sx={{ bgcolor: "#ff7800", ":hover": { bgcolor: "#b25600" }, fontWeight: 700 }}
-          >
-            Criar
-          </Button>
+        <Box
+          sx={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: { xs: "90vw", sm: 520 },
+            bgcolor: "background.paper",
+            borderRadius: 2,
+            boxShadow: 24,
+            p: 3,
+          }}
+        >
+          <Typography variant="h6" mb={2}>
+            Criar pet
+          </Typography>
+          <Stack spacing={2}>
+            <TextField
+              label="Nome do pet"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              fullWidth
+            />
+            <TextField
+              label="Avatar (URL opcional)"
+              value={avatar}
+              onChange={(e) => setAvatar(e.target.value)}
+              fullWidth
+            />
+            <TextField
+              label="Bio (opcional)"
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+              fullWidth
+            />
+            <Stack direction="row" justifyContent="flex-end" spacing={1}>
+              <Button onClick={() => setOpen(false)}>Cancelar</Button>
+              <Button variant="contained" onClick={handleCreate}>
+                Salvar
+              </Button>
+            </Stack>
+          </Stack>
         </Box>
       </Modal>
-    </Box>
+    </Container>
   );
-}
+};
+
+export default SelectPet;
