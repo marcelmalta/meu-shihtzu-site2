@@ -1,4 +1,4 @@
-// src/FeedCard.tsx
+// src/FeedCard.tsx  (id como string + likes/comments opcionais + suporta "text")
 import React from "react";
 import { Box, Typography, Avatar } from "@mui/material";
 import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
@@ -6,24 +6,21 @@ import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
 type PostType = "image" | "video" | "text";
 
 export interface Post {
-  id: string;               // <- string para casar com _id do Mongo
+  id: string;               // Mongo _id → string
   petName: string;
   owner?: string;
   type: PostType;
-  media?: string;           // opcional (para posts de texto)
+  media?: string;
   caption?: string;
-  likes?: number;           // opcional (backend ainda não envia)
-  comments?: number;        // opcional
+  likes?: number;           // podem não existir ainda
+  comments?: number;
   createdAt?: string;
 }
 
-// Avatar default (pode trocar por avatar do pet se quiser)
+// Avatar default (troque para avatar do pet se tiver)
 const userAvatar = "/uploads/avatar-mariana.jpg";
 
-const FeedCard: React.FC<{ post: Post; onClick?: () => void }> = ({
-  post,
-  onClick,
-}) => (
+const FeedCard: React.FC<{ post: Post; onClick?: () => void }> = ({ post, onClick }) => (
   <Box
     sx={{
       background: "#fff",
@@ -40,16 +37,12 @@ const FeedCard: React.FC<{ post: Post; onClick?: () => void }> = ({
     <Box sx={{ display: "flex", alignItems: "center", mb: 0.7 }}>
       <Avatar src={userAvatar} sx={{ width: 38, height: 38, mr: 1 }} />
       <Box>
-        <Typography
-          sx={{ fontWeight: 700, fontSize: "0.98rem", color: "#222" }}
-        >
+        <Typography sx={{ fontWeight: 700, fontSize: "0.98rem", color: "#222" }}>
           {post.petName}
         </Typography>
         <Typography sx={{ fontSize: "0.81rem", color: "#444" }}>
           {post.owner ? `@${post.owner} • ` : ""}
-          {post.createdAt
-            ? new Date(post.createdAt).toLocaleDateString("pt-BR")
-            : ""}
+          {post.createdAt ? new Date(post.createdAt).toLocaleDateString("pt-BR") : ""}
         </Typography>
       </Box>
       <MoreHorizIcon sx={{ marginLeft: "auto", color: "#888" }} />
@@ -96,12 +89,8 @@ const FeedCard: React.FC<{ post: Post; onClick?: () => void }> = ({
     {/* Se type === "text", não renderiza mídia */}
 
     <Box sx={{ display: "flex", gap: 3, mt: 1, ml: 0.7 }}>
-      <Typography sx={{ fontSize: "0.96rem" }}>
-        ❤️ {post.likes ?? 0}
-      </Typography>
-      <Typography sx={{ fontSize: "0.96rem" }}>
-        💬 {post.comments ?? 0}
-      </Typography>
+      <Typography sx={{ fontSize: "0.96rem" }}>❤️ {post.likes ?? 0}</Typography>
+      <Typography sx={{ fontSize: "0.96rem" }}>💬 {post.comments ?? 0}</Typography>
     </Box>
   </Box>
 );

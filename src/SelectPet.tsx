@@ -1,20 +1,10 @@
-// src/SelectPet.tsx
-import React, { useEffect, useState } from "react";
+// src/SelectPet.tsx  (Vite + Axios services, sem process.env, sem fetch)
+import { useEffect, useState } from "react";
 import {
-  Avatar,
-  Box,
-  Button,
-  Card,
-  CardActionArea,
-  CardContent,
-  Container,
-  Modal,
-  Stack,
-  TextField,
-  Typography,
-  CircularProgress,
+  Box, Typography, Card, CardActionArea, Avatar, Button,
+  Modal, TextField, CircularProgress
 } from "@mui/material";
-import Grid from "@mui/material/Grid"; // MUI Grid v1
+import Grid from "@mui/material/Grid"; // 👈 Grid v1
 import { useNavigate } from "react-router-dom";
 import {
   getMyPets,
@@ -23,17 +13,14 @@ import {
   type Pet,
 } from "./services/api";
 
-const SelectPet: React.FC = () => {
+export default function SelectPet() {
   const [pets, setPets] = useState<Pet[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  // modal criar
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
-  const [avatar, setAvatar] = useState("");
   const [bio, setBio] = useState("");
-
+  const [avatar, setAvatar] = useState("");
+  const [error, setError] = useState("");
   const nav = useNavigate();
 
   const loadPets = async () => {
@@ -84,26 +71,26 @@ const SelectPet: React.FC = () => {
   };
 
   return (
-    <Container maxWidth="md" sx={{ py: 3 }}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
-        <Typography variant="h6">Selecione um pet</Typography>
-        <Button variant="contained" onClick={() => setOpen(true)}>
-          Criar novo pet
-        </Button>
-      </Stack>
-
-      {loading ? (
-        <Box display="flex" justifyContent="center" py={6}>
-          <CircularProgress />
+    <Box sx={{ minHeight: "100vh", py: 3 }}>
+      <Box sx={{ maxWidth: 1080, mx: "auto", px: 2 }}>
+        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
+          <Typography variant="h6">Selecione um pet</Typography>
+          <Button variant="contained" onClick={() => setOpen(true)}>
+            Criar novo pet
+          </Button>
         </Box>
-      ) : (
-        <Grid container spacing={2}>
-          {pets.map((p) => (
-            <Grid item xs={12} sm={6} md={4} key={p._id}>
-              <Card>
-                <CardActionArea onClick={() => handleSelect(p)}>
-                  <CardContent>
-                    <Stack alignItems="center" spacing={1.5}>
+
+        {loading ? (
+          <Box display="flex" justifyContent="center" py={6}>
+            <CircularProgress />
+          </Box>
+        ) : (
+          <Grid container spacing={2}>
+            {pets.map((p) => (
+              <Grid item xs={6} sm={4} md={3} key={p._id}>
+                <Card>
+                  <CardActionArea onClick={() => handleSelect(p)}>
+                    <Box sx={{ p: 2, display: "flex", alignItems: "center", flexDirection: "column", gap: 1 }}>
                       <Avatar src={p.avatar} sx={{ width: 72, height: 72 }} />
                       <Typography fontWeight={700}>{p.name}</Typography>
                       {p.bio && (
@@ -114,27 +101,25 @@ const SelectPet: React.FC = () => {
                       <Button variant="contained" fullWidth>
                         Entrar como {p.name}
                       </Button>
-                    </Stack>
-                  </CardContent>
-                </CardActionArea>
-              </Card>
-            </Grid>
-          ))}
-          {!pets.length && (
-            <Grid item xs={12}>
-              <Typography color="text.secondary">
-                Você ainda não cadastrou nenhum pet.
-              </Typography>
-            </Grid>
-          )}
-        </Grid>
-      )}
+                    </Box>
+                  </CardActionArea>
+                </Card>
+              </Grid>
+            ))}
+            {!pets.length && (
+              <Grid item xs={12}>
+                <Typography color="text.secondary">Você ainda não cadastrou nenhum pet.</Typography>
+              </Grid>
+            )}
+          </Grid>
+        )}
 
-      {!!error && (
-        <Typography mt={2} color="error">
-          {error}
-        </Typography>
-      )}
+        {!!error && (
+          <Typography mt={2} color="error">
+            {error}
+          </Typography>
+        )}
+      </Box>
 
       <Modal open={open} onClose={() => setOpen(false)}>
         <Box
@@ -153,37 +138,25 @@ const SelectPet: React.FC = () => {
           <Typography variant="h6" mb={2}>
             Criar pet
           </Typography>
-          <Stack spacing={2}>
-            <TextField
-              label="Nome do pet"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              fullWidth
-            />
-            <TextField
-              label="Avatar (URL opcional)"
-              value={avatar}
-              onChange={(e) => setAvatar(e.target.value)}
-              fullWidth
-            />
-            <TextField
-              label="Bio (opcional)"
-              value={bio}
-              onChange={(e) => setBio(e.target.value)}
-              fullWidth
-            />
-            <Stack direction="row" justifyContent="flex-end" spacing={1}>
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <TextField label="Nome do pet" value={name} onChange={(e) => setName(e.target.value)} required fullWidth />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField label="Avatar (URL opcional)" value={avatar} onChange={(e) => setAvatar(e.target.value)} fullWidth />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField label="Bio (opcional)" value={bio} onChange={(e) => setBio(e.target.value)} fullWidth />
+            </Grid>
+            <Grid item xs={12} display="flex" justifyContent="flex-end">
               <Button onClick={() => setOpen(false)}>Cancelar</Button>
-              <Button variant="contained" onClick={handleCreate}>
+              <Button variant="contained" onClick={handleCreate} sx={{ ml: 1 }}>
                 Salvar
               </Button>
-            </Stack>
-          </Stack>
+            </Grid>
+          </Grid>
         </Box>
       </Modal>
-    </Container>
+    </Box>
   );
-};
-
-export default SelectPet;
+}
