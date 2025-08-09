@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Box, Typography, Avatar, Button, Grid, Modal, TextField } from "@mui/material";
+import { Box, Typography, Avatar, Button, Modal, TextField } from "@mui/material";
+import Grid from "@mui/material/Grid2";
 import FeedCard from "./FeedCard";
 import type { Post } from "./FeedCard";
 
@@ -156,7 +157,7 @@ const ProfilePage: React.FC = () => {
         )}
         <Grid container spacing={1}>
           {album.map((img, idx) => (
-            <Grid item xs={4} key={idx}>
+            <Grid xs={4} key={idx}>
               <Box sx={{
                 width: "100%", aspectRatio: "1 / 1", borderRadius: 2, overflow: "hidden", border: "1px solid #eee"
               }}>
