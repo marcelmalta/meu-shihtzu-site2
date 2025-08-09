@@ -54,11 +54,22 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 /* =========================
    Rotas da API
    ========================= */
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/pets', require('./routes/pets'));
-app.use('/api/posts', require('./routes/posts'));
-// Upload para R2/S3 (usa @aws-sdk/client-s3 + multer em memória)
-app.use('/api/upload', require('./routes/upload'));
+function safeMount(mountPath, routerPath) {
+  try {
+    const r = require(routerPath);
+    app.use(mountPath, r);
+    console.log(`[OK] Mounted ${routerPath} at ${mountPath}`);
+  } catch (e) {
+    console.error(`[ERR] Failed while mounting ${routerPath} at ${mountPath}`);
+    console.error(e);
+    process.exit(1);
+  }
+}
+
+safeMount('/api/auth', './routes/auth');
+safeMount('/api/pets', './routes/pets');
+safeMount('/api/posts', './routes/posts');
+safeMount('/api/upload', './routes/upload');
 
 /* =========================
    Conexão ao MongoDB
