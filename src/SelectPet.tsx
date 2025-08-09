@@ -3,7 +3,7 @@ import {
   Box, Typography, Card, CardActionArea, Avatar, Button,
   Modal, TextField, CircularProgress
 } from "@mui/material";
-import Grid from '@mui/material/Grid2';
+import { Grid2 as Grid } from '@mui/material';
 import { useNavigate } from "react-router-dom";
 
 type Pet = {

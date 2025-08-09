@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Box, Typography, Avatar, Button, Modal, TextField } from "@mui/material";
-import Grid from "@mui/material/Grid2";
+import { Grid2 as Grid } from '@mui/material';
 import FeedCard from "./FeedCard";
 import type { Post } from "./FeedCard";
 
