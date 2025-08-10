@@ -21,7 +21,6 @@ import {
 import MenuIcon from "@mui/icons-material/Menu";
 import PetsIcon from "@mui/icons-material/Pets";
 
-// serviços (axios) já existentes no seu projeto
 import {
   getActivePet as getActivePetLS,
   clearActivePet,
@@ -31,21 +30,14 @@ import {
 
 const Header: React.FC = () => {
   const navigate = useNavigate();
-
-  // drawer lateral (menu)
   const [open, setOpen] = React.useState(false);
-
-  // menu da conta (avatar)
   const [anchorUser, setAnchorUser] = React.useState<null | HTMLElement>(null);
-
-  // pet ativo mostrado no header
   const [activePet, setActivePet] = React.useState<Pet | null>(getActivePetLS());
 
-  // sincroniza quando mudar em outras abas / ao voltar de páginas
   React.useEffect(() => {
     const sync = () => setActivePet(getActivePetLS());
     window.addEventListener("storage", sync);
-    const id = setInterval(sync, 1000); // pequeno polling garante atualização local
+    const id = setInterval(sync, 1000);
     return () => {
       window.removeEventListener("storage", sync);
       clearInterval(id);
@@ -59,7 +51,7 @@ const Header: React.FC = () => {
   };
 
   const logout = () => {
-    setAuthToken(undefined); // remove Authorization + token do localStorage
+    setAuthToken(undefined);
     clearActivePet();
     setAnchorUser(null);
     navigate("/login");
@@ -81,23 +73,22 @@ const Header: React.FC = () => {
         zIndex: 10,
       }}
     >
-      {/* BG */}
       <img
-        src="/img/shih-background.png"
-        alt="Shih Tzu background"
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          width: "100%",
-          height: "100%",
-          objectFit: "cover",
-          opacity: 0.58,
-          zIndex: 1,
-        }}
-      />
+  src="/img/shih-background.png"
+  alt="Shih Tzu background"
+  style={{
+    position: "absolute",
+    top: 0,
+    left: 0,
+    width: "100%",
+    height: "100%",
+    objectFit: "cover",
+    opacity: 0.58,
+    zIndex: 1,
+    pointerEvents: "none", // <— impede o fundo de bloquear cliques
+  }}
+/>
 
-      {/* Título / Logo */}
       <Button
         onClick={() => navigate("/")}
         sx={{
@@ -114,18 +105,17 @@ const Header: React.FC = () => {
           "&:hover": { background: "none", color: "#FFD700" },
         }}
         disableRipple
+        aria-label="Ir para a página inicial"
       >
         SHIHTIZUz
       </Button>
 
-      {/* Ações à direita: avatar do pet + burger */}
       <Stack
         direction="row"
         spacing={1}
         sx={{ position: "absolute", top: 14, right: 16, zIndex: 3 }}
         alignItems="center"
       >
-        {/* Botão Postar rápido (vai para o perfil do pet) */}
         <Button
           onClick={() =>
             go(activePet ? `/perfil/${activePet._id}` : "/selecionar-pet")
@@ -144,16 +134,8 @@ const Header: React.FC = () => {
           {activePet ? `Perfil de ${activePet.name}` : "Selecionar pet"}
         </Button>
 
-        {/* Avatar do Pet Ativo */}
-        <Tooltip
-          title={
-            activePet ? `Conta do pet: ${activePet.name}` : "Selecionar pet"
-          }
-        >
-          <IconButton
-            onClick={(e) => setAnchorUser(e.currentTarget)}
-            sx={{ p: 0.5 }}
-          >
+        <Tooltip title={activePet ? `Conta do pet: ${activePet.name}` : "Selecionar pet"}>
+          <IconButton onClick={(e) => setAnchorUser(e.currentTarget)} sx={{ p: 0.5 }}>
             <Avatar
               alt={activePet?.name || "Conta"}
               src={activePet?.avatar || "/img/default-avatar.png"}
@@ -162,19 +144,15 @@ const Header: React.FC = () => {
           </IconButton>
         </Tooltip>
 
-        {/* Burger menu (drawer lateral) */}
         <IconButton
-          aria-label="menu"
+          aria-label="Abrir menu"
           onClick={() => setOpen(true)}
-          sx={{
-            color: "#fff",
-          }}
+          sx={{ color: "#fff" }}
         >
           <MenuIcon sx={{ fontSize: 36 }} />
         </IconButton>
       </Stack>
 
-      {/* Menu da conta (avatar) */}
       <Menu
         anchorEl={anchorUser}
         open={Boolean(anchorUser)}
@@ -205,7 +183,6 @@ const Header: React.FC = () => {
         <MenuItem onClick={logout}>Sair</MenuItem>
       </Menu>
 
-      {/* Drawer lateral (atalhos básicos) */}
       <Drawer anchor="right" open={open} onClose={() => setOpen(false)}>
         <Box sx={{ width: 280 }} role="presentation">
           <List>
@@ -221,7 +198,9 @@ const Header: React.FC = () => {
                 }
               >
                 <ListItemText
-                  primary={activePet ? `Perfil de ${activePet.name}` : "Selecionar pet"}
+                  primary={
+                    activePet ? `Perfil de ${activePet.name}` : "Selecionar pet"
+                  }
                 />
               </ListItemButton>
             </ListItem>

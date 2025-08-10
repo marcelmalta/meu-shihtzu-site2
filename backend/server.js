@@ -33,6 +33,21 @@ app.get('/health', (_req, res) => res.send('ok'));
 // Static (dev)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+import cors from "cors"; // ou const cors = require("cors");
+
+const FRONTEND_URL = process.env.FRONTEND_URL || "https://SEU-FRONT.onrender.com";
+
+app.set("trust proxy", 1); // necessário no Render p/ cookies secure
+
+app.use(
+  cors({
+    origin: FRONTEND_URL, // só aceita requisições do seu front
+    credentials: true,    // permite enviar cookies/autenticação
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
+
 // Rotas
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/pets', require('./routes/pets'));

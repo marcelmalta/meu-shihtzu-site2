@@ -1,4 +1,6 @@
+# =====================
 # Logs
+# =====================
 logs
 *.log
 npm-debug.log*
@@ -7,18 +9,43 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
+# =====================
+# Dependências
+# =====================
+node_modules/
+frontend/node_modules/
+backend/node_modules/
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
+# =====================
+# Builds e dist
+# =====================
+dist/
+dist-ssr/
+frontend/dist/
+backend/dist/
+
+# =====================
+# Arquivos locais
+# =====================
+*.local
+.env
+.env.*        # qualquer .env de dev/prod
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+
+# =====================
+# Configs de editores
+# =====================
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+
+# =====================
+# Outras pastas que não precisam ir pro Git
+# =====================
+uploads/
+tmp/

@@ -1,17 +1,60 @@
+// src/HomePage.tsx
 import React from "react";
-import { Box } from "@mui/material";
+import { Box, Alert, CircularProgress, Paper, Avatar, Typography } from "@mui/material";
+import { useNavigate } from "react-router-dom";
+
 import TopBar from "./TopBar";
 import StoriesBar from "./StoriesBar";
-import CreatePostBox from "./CreatePostBox";
 import FeedCard from "./FeedCard";
 import type { Post } from "./FeedCard";
 import BottomNavBar from "./BottomNavBar";
-import { useNavigate } from "react-router-dom";
+import { getPosts } from "./services/api";
 
-// Array de posts (mock; pode vir da API depois)
-const posts: Post[] = [
+// ====== CreatePostBox simples (abre login se não autenticado) ======
+const CreatePostBox: React.FC<{ onCreate?: () => void }> = ({ onCreate }) => {
+  const navigate = useNavigate();
+  return (
+    <Paper
+      elevation={0}
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        gap: 1,
+        px: 1.2,
+        py: 1,
+        borderRadius: 3,
+        mx: 1,
+        mb: 1,
+        border: "1px solid #eee",
+        background: "#fff",
+        cursor: "pointer",
+      }}
+      onClick={() => (onCreate ? onCreate() : navigate("/login"))}
+      aria-label="Criar nova postagem (requer login)"
+    >
+      <Avatar src="/uploads/avatar-mariana.jpg" sx={{ width: 36, height: 36 }} />
+      <Box
+        sx={{
+          flex: 1,
+          borderRadius: 999,
+          border: "1px solid #e5e7eb",
+          px: 1.6,
+          py: 1,
+          color: "#6b7280",
+          fontSize: "0.95rem",
+          background: "#f9fafb",
+        }}
+      >
+        Compartilhe algo do seu pet...
+      </Box>
+    </Paper>
+  );
+};
+
+// ====== Fallback local (mock) ======
+const fallbackPosts: Post[] = [
   {
-    id: 1,
+    id: "1",
     petName: "Luna",
     owner: "Mariana",
     type: "image",
@@ -22,7 +65,7 @@ const posts: Post[] = [
     createdAt: "2025-08-08",
   },
   {
-    id: 2,
+    id: "2",
     petName: "Max",
     owner: "Paulo",
     type: "video",
@@ -32,122 +75,90 @@ const posts: Post[] = [
     comments: 7,
     createdAt: "2025-08-07",
   },
-  {
-    id: 3,
-    petName: "Bidu",
-    owner: "Roberta",
-    type: "image",
-    media: "/uploads/bidu-pose.jpg",
-    caption: "Bidu ama posar pra foto!",
-    likes: 17,
-    comments: 2,
-    createdAt: "2025-08-06",
-  },
-  {
-    id: 4,
-    petName: "Mel",
-    owner: "Lucas",
-    type: "video",
-    media: "/uploads/mel-correndo.mp4",
-    caption: "Correndo pela casa depois do banho 😂",
-    likes: 48,
-    comments: 10,
-    createdAt: "2025-08-05",
-  },
-  {
-    id: 5,
-    petName: "Simba",
-    owner: "Ana",
-    type: "image",
-    media: "/uploads/simba-fantasia.jpg",
-    caption: "Fantasia nova pro Simba 🦁",
-    likes: 29,
-    comments: 8,
-    createdAt: "2025-08-04",
-  },
-  {
-    id: 6,
-    petName: "Zoe",
-    owner: "Carlos",
-    type: "image",
-    media: "/uploads/zoe-sol.jpg",
-    caption: "Tomando solzinho da manhã 😎",
-    likes: 12,
-    comments: 1,
-    createdAt: "2025-08-03",
-  },
-  {
-    id: 7,
-    petName: "Dudu",
-    owner: "Priscila",
-    type: "video",
-    media: "/uploads/dudu-truques.mp4",
-    caption: "Dudu aprendendo novos truques!",
-    likes: 54,
-    comments: 14,
-    createdAt: "2025-08-02",
-  },
-  {
-    id: 8,
-    petName: "Nina",
-    owner: "Vitor",
-    type: "image",
-    media: "/uploads/nina-caminha.jpg",
-    caption: "Descansando depois do passeio.",
-    likes: 21,
-    comments: 3,
-    createdAt: "2025-08-02",
-  },
-  {
-    id: 9,
-    petName: "Bento",
-    owner: "Camila",
-    type: "image",
-    media: "/uploads/bento-lanche.jpg",
-    caption: "Olha a carinha pedindo petisco 😍",
-    likes: 33,
-    comments: 12,
-    createdAt: "2025-08-01",
-  },
-  {
-    id: 10,
-    petName: "Lilica",
-    owner: "Fernanda",
-    type: "video",
-    media: "/uploads/lilica-bolinha.mp4",
-    caption: "Brincando de pegar bolinha, não cansa nunca!",
-    likes: 61,
-    comments: 20,
-    createdAt: "2025-07-31",
-  },
 ];
+
+const mapApiToPosts = (rows: any[]): Post[] =>
+  (rows ?? []).map((r) => ({
+    id: String(r.id ?? r._id ?? Math.random().toString(36).slice(2, 10)),
+    petName: r.petName ?? r.pet?.name ?? "Pet",
+    owner: r.owner ?? r.user?.username,
+    type: (r.type as Post["type"]) ?? (r.media ? "image" : "text"),
+    media: r.media,
+    caption: r.caption ?? r.text ?? "",
+    likes: r.likes ?? 0,
+    comments: r.commentsCount ?? r.comments ?? 0,
+    createdAt: r.createdAt,
+  }));
 
 const HomePage: React.FC = () => {
   const navigate = useNavigate();
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
+  const [posts, setPosts] = React.useState<Post[]>([]);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await getPosts();
+        const mapped = mapApiToPosts(data);
+        if (!cancelled) {
+          setPosts(mapped.length ? mapped : fallbackPosts);
+        }
+      } catch {
+        if (!cancelled) {
+          setPosts(fallbackPosts);
+          setError("Não foi possível carregar do servidor. Exibindo posts de exemplo.");
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
-    <Box sx={{
-      bgcolor: "#f0f2f5",
-      minHeight: "100vh",
-      pb: 8,
-      maxWidth: 500,
-      mx: "auto",
-      fontFamily: "Arial, 'Segoe UI', Roboto, sans-serif"
-    }}>
+    <Box
+      sx={{
+        bgcolor: "#f0f2f5",
+        minHeight: "100vh",
+        pb: 8,
+        maxWidth: 500,
+        mx: "auto",
+        fontFamily: "Arial, 'Segoe UI', Roboto, sans-serif",
+      }}
+    >
       <TopBar />
       <StoriesBar />
-      <CreatePostBox />
-      <Box sx={{
-        display: "flex", flexDirection: "column", gap: 2, px: 0.5
-      }}>
-        {posts.map(post => (
-          <FeedCard
-            key={post.id}
-            post={post}
-            onClick={() => navigate(`/post/${post.id}`)}
-          />
-        ))}
-      </Box>
+      <CreatePostBox onCreate={() => navigate("/login")} />
+
+      {error && (
+        <Alert severity="warning" sx={{ mx: 1, mb: 1, borderRadius: 2 }}>
+          {error}
+        </Alert>
+      )}
+
+      {loading ? (
+        <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
+          <CircularProgress />
+        </Box>
+      ) : (
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2, px: 0.5 }}>
+          {posts.map((post) => (
+            <FeedCard key={post.id} post={post} onClick={() => navigate(`/noticia/${post.id}`)} />
+          ))}
+          {posts.length === 0 && (
+            <Box sx={{ textAlign: "center", color: "#555", py: 4 }}>
+              <Typography variant="body1">Sem posts por aqui ainda.</Typography>
+            </Box>
+          )}
+        </Box>
+      )}
+
       <BottomNavBar />
     </Box>
   );

@@ -1,116 +1,78 @@
 // src/services/api.ts
-import axios, { AxiosError } from "axios";
+import axios from "axios";
 
-/**
- * Vite: variáveis começam com VITE_
- * Acesse com import.meta.env.VITE_API_URL
- * (Sem barras no final)
- */
-const API_URL = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/+$/, "");
+// ====== Base URL (Vite) ======
+export const API_BASE =
+  import.meta.env.VITE_API_URL?.toString() || "http://localhost:3000";
 
-if (!API_URL) {
-  console.warn("[api] VITE_API_URL não definida. Usando http://localhost:5000");
+// ====== Axios instance ======
+export const api = axios.create({
+  baseURL: API_BASE,
+  withCredentials: true, // cookies/sessão cross-site
+  headers: { "Content-Type": "application/json" },
+});
+
+// ====== Auth Token Helpers (opcional: Bearer) ======
+const AUTH_KEY = "auth_token";
+
+export function setAuthToken(token?: string) {
+  if (token) {
+    localStorage.setItem(AUTH_KEY, token);
+    api.defaults.headers.common.Authorization = `Bearer ${token}`;
+  } else {
+    localStorage.removeItem(AUTH_KEY);
+    delete api.defaults.headers.common.Authorization;
+  }
 }
 
-export const api = axios.create({
-  baseURL: API_URL || "http://localhost:5000",
-  timeout: 10000, // 10s
-});
+// Restaurar token ao carregar
+const savedToken = localStorage.getItem(AUTH_KEY);
+if (savedToken) setAuthToken(savedToken);
 
-/** Seta/limpa header Authorization + persiste token */
-export const setAuthToken = (token?: string) => {
-  if (token) {
-    api.defaults.headers.common.Authorization = `Bearer ${token}`;
-    localStorage.setItem("token", token);
-  } else {
-    delete api.defaults.headers.common.Authorization;
-    localStorage.removeItem("token");
-  }
-};
+// ====== Pet Helpers (usados no Header.tsx) ======
+const ACTIVE_PET_KEY = "active_pet";
 
-// carregar token salvo ao iniciar
-const saved = localStorage.getItem("token");
-if (saved) setAuthToken(saved);
-
-/* ------------ Interceptors ------------ */
-// Request: garante Authorization sempre atualizado
-api.interceptors.request.use((config) => {
-  const tk = localStorage.getItem("token");
-  if (tk) {
-    config.headers = config.headers ?? {};
-    (config.headers as any).Authorization = `Bearer ${tk}`;
-  }
-  return config;
-});
-
-// Response: trata 401 globalmente
-api.interceptors.response.use(
-  (res) => res,
-  (err: AxiosError<any>) => {
-    const status = err.response?.status;
-    if (status === 401) {
-      setAuthToken(undefined);
-      if (typeof window !== "undefined" && window.location.pathname !== "/login") {
-        window.location.replace("/login");
-      }
-    }
-    return Promise.reject(err);
-  }
-);
-
-/* ------------- Endpoints -------------- */
-// ----- Auth -----
-export const registerUser = (name: string, email: string, password: string) =>
-  api.post("/api/auth/register", { name, email, password });
-
-export const loginUser = (email: string, password: string) =>
-  api.post("/api/auth/login", { email, password });
-
-// ----- Pets -----
-export type Pet = { _id: string; name: string; avatar?: string; bio?: string; owner?: string };
-
-export const getMyPets = () => api.get<Pet[]>("/api/pets/my-pets");
-export const createPet = (payload: { name: string; bio?: string; avatar?: string }) =>
-  api.post<Pet>("/api/pets/create", payload);
-// opcional (se você tiver o endpoint no back):
-export const getPetById = (id: string) => api.get<Pet>(`/api/pets/${id}`);
-
-// ----- Posts -----
-export type PostDTO = {
+export type Pet = {
   _id: string;
-  petId: string;
-  type: "image" | "video" | "text";
-  media?: string;
-  caption?: string;
-  createdAt: string;
+  name: string;
+  avatar?: string;
+  bio?: string;
 };
 
-export const getPostsByPetId = (petId: string) => api.get<PostDTO[]>(`/api/posts/${petId}`);
-export const createPostForPet = (
-  petId: string,
-  payload: { type: "image" | "video" | "text"; media?: string; caption?: string }
-) => api.post<PostDTO>(`/api/posts/${petId}`, payload);
+export function getActivePet(): Pet | null {
+  try {
+    const raw = localStorage.getItem(ACTIVE_PET_KEY);
+    return raw ? (JSON.parse(raw) as Pet) : null;
+  } catch {
+    return null;
+  }
+}
+export function setActivePet(pet: Pet) {
+  localStorage.setItem(ACTIVE_PET_KEY, JSON.stringify(pet));
+  window.dispatchEvent(new StorageEvent("storage")); // para sincronizar menus
+}
+export function clearActivePet() {
+  localStorage.removeItem(ACTIVE_PET_KEY);
+  window.dispatchEvent(new StorageEvent("storage"));
+}
 
-// ----- Upload (S3/R2 via backend) -----
-// petId opcional: backend pode usar pra compor a chave no bucket
-export const uploadMedia = (file: File, petId?: string) => {
-  const fd = new FormData();
-  fd.append("file", file);
-  if (petId) fd.append("petId", petId);
-  return api.post<{ url: string; filename: string; mimetype: string; size: number }>(
-    "/api/upload",
-    fd,
-    { headers: { "Content-Type": "multipart/form-data" } }
-  );
-};
-
-// ----- Pet Ativo (localStorage) -----
-export const setActivePet = (pet: Pet) =>
-  localStorage.setItem("activePet", JSON.stringify(pet));
-
-export const getActivePet = (): Pet | null => {
-  const raw = localStorage.getItem("activePet");
-  return raw ? (JSON.parse(raw) as Pet) : null;
-};
-
-export const clearActivePet = () => localStorage.removeItem("activePet");
+// ====== API helpers ======
+export async function getPosts() {
+  // tente padrões comuns
+  const endpoints = ["/api/posts", "/api/feed"];
+  for (const ep of endpoints) {
+    try {
+      const { data } = await api.get(ep);
+      // aceitar {data: []} | [] | {posts: []}
+      const arr = Array.isArray(data?.data)
+        ? data.data
+        : Array.isArray(data)
+        ? data
+        : data?.posts;
+      if (Array.isArray(arr)) return arr;
+    } catch {
+      // tenta o próximo
+    }
+  }
+  throw new Error("Não foi possível carregar posts do servidor.");
+}
