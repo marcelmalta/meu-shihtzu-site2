@@ -1,68 +1,115 @@
+// server.js
 require('dotenv').config();
+
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
+const session = require('express-session');
+const MongoStore = require('connect-mongo');
 
 const app = express();
 
-// CORS
+/* ---------------------------
+   Configs básicas / helpers
+----------------------------*/
 const clean = (u) => (u || '').replace(/\/+$/, '');
-const FRONTEND = clean(process.env.FRONTEND_URL) || 'http://localhost:5173';
-const allowedOrigins = new Set([FRONTEND, 'http://localhost:3000', 'http://localhost:5173']);
+const FRONTEND_URL = clean(process.env.FRONTEND_URL) || 'http://localhost:5173';
+const PORT = process.env.PORT || 5000;
 
-app.use(cors({
+const isProd = process.env.NODE_ENV === 'production';
+
+// em Render/Heroku etc. precisa para cookies `secure: true`
+app.set('trust proxy', 1);
+
+/* -----------
+   C O R S
+----------- */
+const allowedOrigins = new Set([
+  FRONTEND_URL,
+  'http://localhost:5173',
+  'http://localhost:3000',
+]);
+
+const corsConfig = {
   origin(origin, cb) {
+    // permitir tools locais/healthcheck sem origin
     if (!origin) return cb(null, true);
     if (allowedOrigins.has(origin)) return cb(null, true);
     return cb(new Error('Not allowed by CORS'));
   },
   credentials: true,
+  methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-  methods: ['GET','HEAD','PUT','PATCH','POST','DELETE','OPTIONS'],
-}));
-app.options('*', cors());
+};
 
-// Body
-app.use(express.json({ limit: '2mb' }));
+app.use(cors(corsConfig));
+// Preflight
+app.options('*', cors(corsConfig));
+
+/* -------------------------
+   Body parsers + estáticos
+-------------------------- */
+app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true }));
-
-// Health
-app.get('/health', (_req, res) => res.send('ok'));
-
-// Static (dev)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-import cors from "cors"; // ou const cors = require("cors");
+/* -------------------------
+   Sessão (opcional, mas pronto)
+   - necessário se o login usar cookie de sessão
+-------------------------- */
+if (process.env.SESSION_SECRET && process.env.MONGO_URI) {
+  app.use(
+    session({
+      name: 'sid',
+      secret: process.env.SESSION_SECRET,
+      resave: false,
+      saveUninitialized: false,
+      store: MongoStore.create({
+        mongoUrl: process.env.MONGO_URI,
+        ttl: 60 * 60 * 24 * 7, // 7 dias
+      }),
+      cookie: {
+        httpOnly: true,
+        sameSite: 'none',                // permite cookie cross-site
+        secure: isProd,                  // true em produção (HTTPS no Render)
+        maxAge: 1000 * 60 * 60 * 24 * 7, // 7 dias
+      },
+    })
+  );
+}
 
-const FRONTEND_URL = process.env.FRONTEND_URL || "https://SEU-FRONT.onrender.com";
+/* ------------
+   Healthcheck
+------------- */
+app.get('/health', (_req, res) => res.status(200).send('ok'));
 
-app.set("trust proxy", 1); // necessário no Render p/ cookies secure
-
-app.use(
-  cors({
-    origin: FRONTEND_URL, // só aceita requisições do seu front
-    credentials: true,    // permite enviar cookies/autenticação
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
-
-// Rotas
+/* ----------
+   Rotas API
+----------- */
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/pets', require('./routes/pets'));
 app.use('/api/posts', require('./routes/posts'));
 app.use('/api/upload', require('./routes/upload'));
 
-// Mongo
-mongoose.connect(process.env.MONGO_URI)
+/* ---------------
+   Conexão Mongo
+---------------- */
+mongoose
+  .connect(process.env.MONGO_URI, {
+    dbName: process.env.MONGO_DB || undefined,
+  })
   .then(() => console.log('MongoDB conectado'))
   .catch((err) => console.error('Erro MongoDB:', err));
 
-// Errors
-app.use((err, req, res, next) => {
+/* ----------------
+   Handler de erros
+----------------- */
+app.use((err, req, res, _next) => {
   if (err && err.message === 'Not allowed by CORS') {
-    return res.status(403).json({ msg: 'Origem não permitida pelo CORS', origin: req.headers.origin });
+    return res
+      .status(403)
+      .json({ message: 'Origem não permitida pelo CORS', origin: req.headers.origin });
   }
   if (err instanceof SyntaxError && 'body' in err) {
     return res.status(400).json({ message: 'JSON inválido' });
@@ -77,6 +124,10 @@ app.use((err, req, res, next) => {
   return res.status(500).json({ message: 'Erro interno do servidor' });
 });
 
-// Start
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}`));
+/* ------
+   Start
+------- */
+app.listen(PORT, () => {
+  console.log(`Servidor rodando na porta ${PORT}`);
+  console.log('FRONTEND_URL permitido:', FRONTEND_URL);
+});
